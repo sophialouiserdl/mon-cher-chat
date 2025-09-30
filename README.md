@@ -1,17 +1,17 @@
-#  Mon Cher Chat: Private Local LLM Chatbot 🐈🎀
+#  Mon Cher Chat: Private Local LLM Chatbot 🐱🎀
 
 ## Project Overview
 
-**Mon Cher Chat** is a conversational chatbot prototype showcasing the capability to run a high-performance Large Language Model (LLM), **DeepSeek-R1**, entirely on a local machine. We use **Ollama** as the LLM runtime and **Streamlit** to build a friendly, interactive web interface.
+**Mon Cher Chat** is a conversational chatbot prototype that I developed to showcase my skills in building and deploying local AI solutions. **I** chose the high-performance Large Language Model (LLM), **DeepSeek-R1**, and implemented it entirely on my local machine, using **Ollama** as the LLM runtime and **Streamlit** to build a friendly, interactive web interface.
 
-This project emphasizes **data privacy**, full **control over the AI environment**, and a lean, efficient architecture perfect for a technical portfolio.
+This project is a crucial demonstration of modern LLM engineering principles. By prioritizing **local execution** and **data privacy**, I successfully created a blueprint for building secure, custom AI tools, which is highly relevant for enterprise applications like internal knowledge bases and secure document analysis. The architecture eliminates recurring cloud costs and dependencies, proving the feasibility of running powerful models affordably and securely.
 
 ### 🔎 Technical Highlights
 
-* **Local-First Execution:** Ensures all conversations and data remain securely on your machine, eliminating the need for cloud dependencies or external API calls.
-* **High-Performance LLM:** Utilizes the **DeepSeek-R1** open reasoning model, known for its performance comparable to leading models, such as O3 and Gemini 2.5 Pro.
-* **Conversational Memory:** Implements state management (`st.session_state`) to maintain the full conversation history, allowing the AI to generate coherent, context-aware responses over long dialogues.
-* **Custom Streamlit UI:** Features a responsive, modern chat interface developed quickly using Python.
+* **Local-First Execution:** I configured the application to run entirely locally, ensuring all conversations and data remain securely on **my** machine, eliminating the need for cloud dependencies or external API calls.
+* **High-Performance LLM:** I utilized the **DeepSeek-R1** open reasoning model (1.5b variant), known for its performance comparable to leading models, such as O3 and Gemini 2.5 Pro.
+* **Conversational Memory:** I implemented state management (`st.session_state`) to maintain the full conversation history, allowing the AI to generate coherent, context-aware responses over long dialogues.
+* **Custom Streamlit UI:** I developed a responsive, modern chat interface using Python, including custom HTML/CSS styling for an improved user experience.
 
 ## 🔎 Architecture and Technologies
 
