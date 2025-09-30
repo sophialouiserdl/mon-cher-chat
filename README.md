@@ -1,77 +1,77 @@
-#  Mon Cher Chat: Chatbot com LLM Local e Privado
+#  Mon Cher Chat: Private Local LLM Chatbot 🐱🎀
 
-## Visão Geral do Projeto
+## Project Overview
 
-O **Mon Cher Chat** é um protótipo de chatbot conversacional que demonstra a capacidade de rodar um Large Language Model (LLM) de alta performance, o **DeepSeek-R1**, diretamente na máquina local, utilizando o **Ollama** como runtime e **Streamlit** para a interface web interativa.
+[cite_start]**Mon Cher Chat** is a conversational chatbot prototype showcasing the capability to run a high-performance Large Language Model (LLM), **DeepSeek-R1** [cite: 29][cite_start], entirely on a local machine[cite: 2]. [cite_start]We use **Ollama** as the LLM runtime [cite: 5, 25] [cite_start]and **Streamlit** to build a friendly, interactive web interface[cite: 15, 149].
 
-Este projeto foca em **privacidade, controle total sobre os dados** e a demonstração de uma arquitetura de IA leve e eficiente para o seu portfólio.
+[cite_start]This project emphasizes **data privacy**[cite: 25], full **control over the AI environment**, and a lean, efficient architecture perfect for a technical portfolio.
 
-### 🚀 Destaques Técnicos
+### 🔎 Technical Highlights
 
-* **Execução Local:** Garantia de que todas as conversas e dados permanecem na sua máquina, sem depender de APIs ou serviços em nuvem.
-* **DeepSeek-R1:** Utilização de um modelo *open-source* com capacidade de raciocínio avançada, comparável a modelos líderes como O3 e Gemini 2.5 Pro.
-* **Memória Conversacional:** Implementação de um mecanismo de estado (`st.session_state`) que permite à IA manter o contexto e a coerência em diálogos longos.
-* **Interface Streamlit:** Criação de uma interface de chat responsiva e elegante usando Python.
+* [cite_start]**Local-First Execution:** Ensures all conversations and data remain securely on your machine, eliminating the need for cloud dependencies or external API calls[cite: 25].
+* [cite_start]**High-Performance LLM:** Utilizes the **DeepSeek-R1** open reasoning model [cite: 29][cite_start], known for its performance comparable to leading models, such as O3 and Gemini 2.5 Pro[cite: 29].
+* [cite_start]**Conversational Memory:** Implements state management (`st.session_state`) [cite: 217] [cite_start]to maintain the full conversation history[cite: 18], allowing the AI to generate coherent, context-aware responses over long dialogues.
+* [cite_start]**Custom Streamlit UI:** Features a responsive, modern chat interface developed quickly using Python[cite: 149].
 
-## 🏗️ Arquitetura e Tecnologias
+## 🔎 Architecture and Technologies
 
-| Categoria | Ferramenta / Tecnologia | Função no Projeto |
+| Category | Tool / Technology | Role in the Project |
 | :--- | :--- | :--- |
-| **LLM (Modelo)** | **DeepSeek-R1:1.5b** | O modelo de linguagem central que gera as respostas. |
-| **LLM Runtime** | **Ollama** | Responsável por baixar, servir e expor o LLM através de uma API local. |
-| **Interface Web** | **Streamlit** | Framework Python para o desenvolvimento rápido da interface de usuário. |
-| **Lógica** | **Python 3.x + LangChain** | Linguagem principal e biblioteca para gerenciar a comunicação com o Ollama e a memória do chat. |
-| **Código Fonte** | `app.py` | Script principal que orquestra a UI, memória e a chamada `llm.invoke()`. |
+| **LLM (Model)** | **DeepSeek-R1:1.5b** | [cite_start]The core model responsible for all response generation[cite: 31]. |
+| **LLM Runtime** | **Ollama** | [cite_start]Manages, serves, and exposes the LLM via a local API endpoint[cite: 5]. |
+| **Interface Web** | **Streamlit** | [cite_start]Python framework used for rapid front-end development[cite: 149]. |
+| **Logic** | **Python 3.x + LangChain** | [cite_start]Primary language and framework for handling model communication, memory, and application logic[cite: 152]. |
+| **Source Code** | `app.py` | The main script orchestrating the UI, memory, and the critical `llm.invoke()` calls. |
 
-## 💻 Como Usar (Passo a Passo)
+## 🔎 Setup and Installation Guide
 
-Para rodar este chatbot, você precisa ter o Git, o Python e o Ollama instalados na sua máquina.
+[cite_start]To run this chatbot, you must have **Git** [cite: 24][cite_start], **Python**, and the **Ollama** application installed on your machine[cite: 5].
 
-### Passo 1: Configurar Ambiente e LLM
+### Step 1: Configure Environment and LLM
 
-1.  **Instale o Ollama** (se ainda não o fez).
-2.  **Baixe o modelo DeepSeek-R1:**
+1.  [cite_start]**Install Ollama** (if you haven't already)[cite: 5].
+2.  **Download the DeepSeek-R1 model:**
     ```bash
-    ollama pull deepseek-r1:1.5b
+    [cite_start]ollama pull deepseek-r1:1.5b [cite: 32]
     ```
 
-### Passo 2: Clonar e Instalar Dependências
+### Step 2: Clone and Install Dependencies
 
-1.  **Clone o repositório:**
+1.  **Clone the repository:**
     ```bash
-    git clone https://github.com/sophialouiserdl/mon-cher-chat-llm.git
+    git clone [https://github.com/sophialouiserdl/mon-cher-chat-llm.git](https://github.com/sophialouiserdl/mon-cher-chat-llm.git)
     cd mon-cher-chat
     ```
-2.  **Instale as dependências Python:**
+2.  **Install Python dependencies** (from `requirements.txt`):
     ```bash
     pip install -r requirements.txt
     ```
 
-### Passo 3: Executar o Chatbot
+### Step 3: Run the Chatbot
 
-1.  Certifique-se de que o Ollama esteja rodando em segundo plano.
-2.  Execute a aplicação Streamlit:
+1.  Ensure the **Ollama** application is running in the background.
+2.  Execute the Streamlit application:
     ```bash
     streamlit run app.py
     ```
-A interface do chat será aberta automaticamente no seu navegador.
+The chat interface will automatically open in your web browser.
 
 ---
 
-## 🖼️ Demonstração
+## ✅ Live Demonstration
 
-O chat Mon Cher Chat em funcionamento, mostrando a interface Streamlit e a resposta do DeepSeek-R1.
+[cite_start]The following screenshots illustrate the **Mon Cher Chat** interface, showcasing the custom design [cite: 274] and the DeepSeek-R1 model's conversational output.
 
 <p align="center">
-  <img src="assets/demo_chat.jpg" alt="Demonstração do Chatbot Mon Cher Chat #1" width="750"/>
+  <img src="assets/demo_chat.jpg" alt="Mon Cher Chat Chatbot Demonstration #1: Initial Interface" width="750"/>
 </p>
 
 <p align="center">
-  <img src="assets/demo_chat2.jpg" alt="Demonstração do Chatbot Mon Cher Chat #2" width="750"/>
+  <img src="assets/demo_chat2.jpg" alt="Mon Cher Chat Chatbot Demonstration #2: Conversation in progress" width="750"/>
 </p>
 
 <p align="center">
-  <img src="assets/demo_chat3.jpg" alt="Demonstração do Chatbot Mon Cher Chat #3" width="750"/>
+  <img src="assets/demo_chat3.jpg" alt="Mon Cher Chat Chatbot Demonstration #3: Conversational Memory" width="750"/>
 </p>
 
 ---
