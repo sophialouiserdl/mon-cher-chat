@@ -10,7 +10,7 @@ This architecture serves as a crucial demonstration of modern, cost-effective LL
 
 The Mon Cher Chat application is engineered for performance, privacy, and seamless operation through the following key components:
 
-* **Secure Local Deployment:** The entire stack—from the **DeepSeek-R1:1.5b** model to the **Streamlit UI**—is configured for local execution, ensuring **100% data privacy** and eliminating dependency on external APIs or cloud providers.
+* **Secure Local Deployment:** The entire stack, from the **DeepSeek-R1:1.5b** model to the **Streamlit UI**, is configured for local execution, ensuring **100% data privacy** and eliminating dependency on external APIs or cloud providers.
 * **Persistent Context & Memory:** Conversational memory management is implemented via `st.session_state` to maintain the full conversation history. This capability allows the model to generate **coherent, context-aware responses** over long, multi-turn dialogues.
 * **High-Fidelity LLM Integration:** The system leverages **Ollama** and **LangChain** to efficiently manage the DeepSeek-R1 model, which is recognized for its advanced reasoning capabilities comparable to leading proprietary models.
 * **Custom User Experience:** A responsive and modern chat interface was developed using Streamlit, complemented by custom styling, ensuring a polished and intuitive user experience.
