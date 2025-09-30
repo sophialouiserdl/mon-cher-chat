@@ -2,9 +2,9 @@
 
 ## Project Overview
 
-**Mon Cher Chat** is a conversational chatbot prototype developed for demonstrating secure, high-performance local AI deployment. The solution integrates the **DeepSeek-R1** Large Language Model (LLM), utilizing **Ollama** as the local runtime and **Streamlit** for the interactive web interface.
+**Mon Cher Chat** is a prototype conversational chatbot designed to demonstrate secure, high-performance AI running entirely on local hardware. The system integrates the DeepSeek-R1 large language model (LLM), using Ollama as the local runtime environment and Streamlit to provide an interactive web interface
 
-This architecture serves as a crucial demonstration of modern, cost-effective LLM engineering principles. By prioritizing **local execution** and **data privacy**, the system establishes a robust blueprint for building secure, custom AI tools. This approach is highly relevant for enterprise applications requiring stringent data privacy and regulatory compliance, such as internal knowledge management or confidential document analysis. The design effectively eliminates recurring cloud service costs and minimizes latency, proving the technical viability of running powerful models affordably and securely within an organization's infrastructure.
+This setup highlights a practical and cost-effective approach to modern LLM deployment. By focusing on local execution and data privacy, it offers a solid framework for building secure, customized AI tools. This approach is particularly valuable for enterprise use cases that demand strict data privacy and regulatory compliance, such as internal knowledge management or confidential document processing. Additionally, it eliminates ongoing cloud service expenses and reduces latency, proving that powerful AI models can be run affordably and securely within an organization’s own infrastructure.
 
 ### 🔎 Technical Highlights
 
