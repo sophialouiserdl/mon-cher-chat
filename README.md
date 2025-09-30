@@ -57,3 +57,21 @@ Para rodar este chatbot, você precisa ter o Git, o Python e o Ollama instalados
 A interface do chat será aberta automaticamente no seu navegador.
 
 ---
+
+## 🖼️ Demonstração
+
+O chat Mon Cher Chat em funcionamento, mostrando a interface Streamlit e a resposta do DeepSeek-R1.
+
+<p align="center">
+  <img src="assets/chat_demo1.jpg" alt="Demonstração do Chatbot Mon Cher Chat #1" width="750"/>
+</p>
+
+<p align="center">
+  <img src="assets/chat_demo2.jpg" alt="Demonstração do Chatbot Mon Cher Chat #2" width="750"/>
+</p>
+
+<p align="center">
+  <img src="assets/chat_demo3.jpg" alt="Demonstração do Chatbot Mon Cher Chat #3" width="750"/>
+</p>
+
+---
