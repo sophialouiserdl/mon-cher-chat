@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-** comentário **
+*comentário*
 
 **Mon Cher Chat** is a prototype conversational chatbot designed to demonstrate secure, high-performance AI running entirely on local hardware. The system integrates the DeepSeek-R1 large language model (LLM), using Ollama as the local runtime environment and Streamlit to provide an interactive web interface
 
