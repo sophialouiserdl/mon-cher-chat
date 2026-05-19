@@ -1,2 +1,4148 @@
 streamlit
 langchain-ollama
+
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Gestão de Auditoria - Protótipo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/phosphor-icons"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <style>
+    :root {
+      --bg: #F5F7FA;
+      --surface: rgba(255, 255, 255, 0.82);
+      --surface-solid: #FFFFFF;
+      --surface-2: #F1F5F9;
+      --surface-3: #E2E8F0;
+      --text: #111827;
+      --muted: #6B7280;
+      --line: rgba(148, 163, 184, 0.28);
+      --primary: #007AFF;
+      --primary-strong: #0057D9;
+      --primary-soft: #EAF4FF;
+      --cyan: #00C2FF;
+      --success: #34C759;
+      --success-soft: #E8F8EE;
+      --warning: #FFB020;
+      --warning-soft: #FFF6DF;
+      --danger: #FF3B30;
+      --danger-soft: #FFEDEC;
+      --shadow: 0 1px 2px rgba(17, 24, 39, 0.05), 0 14px 36px rgba(17, 24, 39, 0.08);
+      --shadow-hover: 0 8px 24px rgba(17, 24, 39, 0.10), 0 24px 48px rgba(17, 24, 39, 0.10);
+      --radius: 22px;
+      --radius-sm: 16px;
+      --ease: cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    body.dark {
+      --bg: #07111F;
+      --surface: rgba(15, 23, 42, 0.78);
+      --surface-solid: #111827;
+      --surface-2: #172033;
+      --surface-3: #243149;
+      --text: #F8FAFC;
+      --muted: #A7B4C8;
+      --line: rgba(148, 163, 184, 0.22);
+      --primary: #7DB3FF;
+      --primary-strong: #B8D7FF;
+      --primary-soft: #172A47;
+      --cyan: #38BDF8;
+      --success: #5CE27F;
+      --success-soft: #12301E;
+      --warning: #FFD166;
+      --warning-soft: #33270D;
+      --danger: #FF7A70;
+      --danger-soft: #3B1518;
+      --shadow: 0 1px 2px rgba(0,0,0,0.32), 0 16px 42px rgba(0,0,0,0.28);
+      --shadow-hover: 0 12px 34px rgba(0,0,0,0.32), 0 28px 62px rgba(0,0,0,0.30);
+    }
+
+    * { box-sizing: border-box; }
+    html { min-height: 100%; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 14px;
+      letter-spacing: 0;
+      transition: background 200ms ease, color 200ms ease;
+    }
+
+    button, input, select, textarea { font: inherit; }
+    button { border: 0; cursor: pointer; }
+    .hidden { display: none !important; }
+    .muted { color: var(--muted); }
+    .caption { font-size: 12px; font-weight: 500; color: var(--muted); }
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    .login-shell {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: minmax(420px, 0.95fr) minmax(360px, 1.05fr);
+      background: var(--bg);
+    }
+
+    .login-brand {
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 52px;
+      color: white;
+      background:
+        radial-gradient(circle at 20% 18%, rgba(14,165,233,0.30), transparent 30%),
+        radial-gradient(circle at 72% 64%, rgba(37,99,235,0.30), transparent 34%),
+        linear-gradient(135deg, #0F172A 0%, #1E3A5F 54%, #2563EB 100%);
+    }
+
+    .brand-mark {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 800;
+      font-size: 18px;
+    }
+
+    .brand-logo {
+      width: 42px;
+      height: 42px;
+      border-radius: 14px;
+      display: grid;
+      place-items: center;
+      background: rgba(255,255,255,0.14);
+      border: 1px solid rgba(255,255,255,0.24);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.18);
+    }
+
+    .brand-logo svg { width: 26px; height: 26px; }
+    .login-brand h1 {
+      max-width: 560px;
+      margin: 0 0 18px;
+      font-size: clamp(34px, 5vw, 64px);
+      line-height: 0.98;
+      letter-spacing: 0;
+      font-weight: 800;
+    }
+
+    .login-brand p {
+      max-width: 520px;
+      margin: 0;
+      font-size: 16px;
+      line-height: 1.7;
+      color: rgba(255,255,255,0.80);
+      font-weight: 500;
+    }
+
+    .version-pill {
+      display: inline-flex;
+      width: fit-content;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.20);
+      color: rgba(255,255,255,0.84);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .login-form-wrap {
+      display: grid;
+      place-items: center;
+      padding: 32px;
+      position: relative;
+    }
+
+    .login-card {
+      width: min(100%, 430px);
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      box-shadow: var(--shadow);
+      padding: 32px;
+      animation: loginSlide 420ms ease both;
+    }
+
+    @keyframes loginSlide {
+      from { opacity: 0; transform: translateY(22px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .mobile-logo {
+      display: none;
+      justify-content: center;
+      margin-bottom: 24px;
+      color: var(--primary);
+      font-weight: 800;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .login-card h2 {
+      margin: 0 0 8px;
+      font-size: 24px;
+      font-weight: 800;
+      letter-spacing: 0;
+    }
+
+    .login-card .intro {
+      margin: 0 0 28px;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    .form-grid {
+      display: grid;
+      gap: 18px;
+    }
+
+    .form-row {
+      display: grid;
+      gap: 7px;
+    }
+
+    .form-row label {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .field-wrap { position: relative; }
+    input, select, textarea {
+      width: 100%;
+      min-height: 42px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--surface);
+      color: var(--text);
+      padding: 10px 12px;
+      outline: none;
+      transition: border-color 200ms ease, box-shadow 200ms ease, background 200ms ease;
+    }
+
+    textarea {
+      min-height: 92px;
+      resize: vertical;
+      line-height: 1.5;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary) 15%, transparent);
+    }
+
+    .invalid input, .invalid select, .invalid textarea,
+    input.invalid, select.invalid, textarea.invalid {
+      border-color: var(--danger);
+      box-shadow: 0 0 0 4px color-mix(in srgb, var(--danger) 13%, transparent);
+    }
+
+    .error-msg {
+      color: var(--danger);
+      font-size: 12px;
+      font-weight: 600;
+      min-height: 16px;
+    }
+
+    .password-toggle {
+      position: absolute;
+      right: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 34px;
+      height: 34px;
+      display: grid;
+      place-items: center;
+      border-radius: 10px;
+      background: transparent;
+      color: var(--muted);
+    }
+
+    .password-toggle:hover { background: var(--surface-2); color: var(--text); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-height: 40px;
+      padding: 10px 14px;
+      border-radius: 12px;
+      font-weight: 700;
+      font-size: 14px;
+      transition: transform 200ms ease, box-shadow 200ms ease, background 200ms ease, border-color 200ms ease, color 200ms ease;
+      white-space: nowrap;
+    }
+
+    .btn:active { transform: translateY(1px); }
+    .btn-primary {
+      color: white;
+      background: linear-gradient(135deg, var(--primary), var(--cyan));
+      box-shadow: 0 10px 22px color-mix(in srgb, var(--primary) 25%, transparent);
+    }
+
+    .btn-primary:hover {
+      box-shadow: 0 14px 28px color-mix(in srgb, var(--primary) 32%, transparent);
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      background: var(--surface-2);
+      color: var(--text);
+      border: 1px solid var(--line);
+    }
+
+    .btn-secondary:hover { background: var(--surface-3); }
+    .btn-ghost {
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid transparent;
+    }
+
+    .btn-ghost:hover {
+      background: var(--surface-2);
+      color: var(--text);
+      border-color: var(--line);
+    }
+
+    .btn-danger {
+      background: var(--danger-soft);
+      color: var(--danger);
+      border: 1px solid color-mix(in srgb, var(--danger) 25%, transparent);
+    }
+
+    .btn-success {
+      background: var(--success-soft);
+      color: var(--success);
+      border: 1px solid color-mix(in srgb, var(--success) 25%, transparent);
+    }
+
+    .btn[disabled] { opacity: 0.72; cursor: not-allowed; transform: none; }
+    .spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255,255,255,0.45);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 760ms linear infinite;
+    }
+
+    .spinner.dark-spin {
+      border-color: color-mix(in srgb, var(--muted) 35%, transparent);
+      border-top-color: var(--primary);
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .login-footer {
+      position: absolute;
+      bottom: 22px;
+      left: 32px;
+      right: 32px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .app-shell { min-height: 100vh; }
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      background: color-mix(in srgb, var(--surface) 92%, transparent);
+      backdrop-filter: blur(18px);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .topbar-inner {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 14px 24px 10px;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 18px;
+    }
+
+    .app-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 800;
+      color: var(--text);
+      min-width: fit-content;
+    }
+
+    .app-brand .brand-logo {
+      width: 36px;
+      height: 36px;
+      color: white;
+      background: linear-gradient(135deg, #1E3A5F, #2563EB);
+    }
+
+    .tabs {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding: 4px;
+      scrollbar-width: none;
+    }
+    .tabs::-webkit-scrollbar { display: none; }
+
+    .tab-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 38px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: transparent;
+      color: var(--muted);
+      font-weight: 700;
+      font-size: 13px;
+      border: 1px solid transparent;
+      transition: background 200ms ease, color 200ms ease, border-color 200ms ease;
+    }
+
+    .tab-btn:hover { background: var(--surface-2); color: var(--text); }
+    .tab-btn.active {
+      background: var(--primary-soft);
+      color: var(--primary);
+      border-color: color-mix(in srgb, var(--primary) 20%, transparent);
+    }
+
+    .tab-btn.import-tab {
+      background: color-mix(in srgb, var(--warning-soft) 72%, var(--surface));
+      color: var(--warning);
+      border-color: color-mix(in srgb, var(--warning) 24%, transparent);
+    }
+
+    .tab-btn.import-tab.active {
+      background: color-mix(in srgb, var(--warning-soft) 86%, var(--surface));
+      color: var(--warning);
+      border-color: color-mix(in srgb, var(--warning) 38%, transparent);
+    }
+
+    .top-actions {
+      display: flex;
+      align-items: center;
+      justify-content: end;
+      gap: 10px;
+      min-width: fit-content;
+    }
+
+    .icon-btn {
+      width: 40px;
+      height: 40px;
+      display: grid;
+      place-items: center;
+      border-radius: 12px;
+      background: var(--surface-2);
+      color: var(--text);
+      border: 1px solid var(--line);
+      transition: transform 200ms ease, background 200ms ease, box-shadow 200ms ease;
+    }
+    .icon-btn:hover { transform: translateY(-1px); box-shadow: var(--shadow); }
+
+    .user-chip {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 7px 10px 7px 8px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: var(--surface);
+    }
+    .avatar {
+      width: 28px;
+      height: 28px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: var(--primary-soft);
+      color: var(--primary);
+      font-weight: 800;
+      font-size: 12px;
+    }
+
+    .content {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    .tab-panel { animation: fadeIn 200ms ease both; }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .page-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 18px;
+      margin-bottom: 24px;
+    }
+
+    .page-head h1 {
+      font-size: 24px;
+      line-height: 1.15;
+      margin: 0 0 6px;
+      font-weight: 800;
+      letter-spacing: 0;
+    }
+    .page-head p { margin: 0; color: var(--muted); line-height: 1.5; }
+
+    .grid {
+      display: grid;
+      gap: 24px;
+    }
+    .grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 24px;
+    }
+
+    .card-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+    .card-title h2 {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: 0;
+    }
+
+    .kpi-card {
+      position: relative;
+      overflow: hidden;
+      animation: kpiIn 360ms ease both;
+    }
+    .kpi-card:nth-child(2) { animation-delay: 60ms; }
+    .kpi-card:nth-child(3) { animation-delay: 120ms; }
+    .kpi-card:nth-child(4) { animation-delay: 180ms; }
+    .kpi-card:nth-child(5) { animation-delay: 240ms; }
+    @keyframes kpiIn {
+      from { opacity: 0; transform: translateY(14px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .kpi-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .kpi-icon {
+      width: 40px;
+      height: 40px;
+      display: grid;
+      place-items: center;
+      border-radius: 14px;
+      background: var(--primary-soft);
+      color: var(--primary);
+      font-size: 20px;
+    }
+    .kpi-label { color: var(--muted); font-size: 12px; font-weight: 700; }
+    .kpi-value { font-size: 28px; line-height: 1; font-weight: 800; margin-bottom: 6px; }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      min-height: 24px;
+      border-radius: 999px;
+      padding: 4px 9px;
+      font-size: 12px;
+      font-weight: 800;
+      border: 1px solid transparent;
+      white-space: nowrap;
+    }
+    .badge.success { color: var(--success); background: var(--success-soft); border-color: color-mix(in srgb, var(--success) 24%, transparent); }
+    .badge.warning { color: var(--warning); background: var(--warning-soft); border-color: color-mix(in srgb, var(--warning) 24%, transparent); }
+    .badge.danger { color: var(--danger); background: var(--danger-soft); border-color: color-mix(in srgb, var(--danger) 24%, transparent); }
+    .badge.info { color: var(--primary); background: var(--primary-soft); border-color: color-mix(in srgb, var(--primary) 22%, transparent); }
+    .badge.neutral { color: var(--muted); background: var(--surface-2); border-color: var(--line); }
+
+    .filters {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 760px;
+      background: var(--surface);
+    }
+    th, td {
+      padding: 13px 14px;
+      text-align: left;
+      border-bottom: 1px solid var(--line);
+      vertical-align: middle;
+    }
+    th {
+      background: var(--surface-2);
+      color: var(--muted);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0;
+      font-weight: 800;
+    }
+    tbody tr:nth-child(even) { background: color-mix(in srgb, var(--surface-2) 38%, transparent); }
+    tbody tr:hover { background: color-mix(in srgb, var(--primary-soft) 44%, transparent); }
+    tbody tr:last-child td { border-bottom: 0; }
+
+    .case-list {
+      display: grid;
+      gap: 14px;
+    }
+    .case-card {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 18px;
+      align-items: center;
+      padding: 18px;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      transition: transform 200ms ease, box-shadow 200ms ease, border-color 200ms ease;
+    }
+    .case-card:hover {
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-hover);
+      border-color: color-mix(in srgb, var(--primary) 32%, var(--line));
+    }
+    .case-main h3 {
+      margin: 0 0 8px;
+      font-size: 16px;
+      font-weight: 800;
+    }
+    .case-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .case-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .sla-line {
+      display: grid;
+      gap: 8px;
+      min-width: 170px;
+      margin-top: 12px;
+    }
+    .mini-progress {
+      height: 8px;
+      border-radius: 999px;
+      overflow: hidden;
+      background: var(--surface-3);
+    }
+    .mini-progress span {
+      display: block;
+      height: 100%;
+      width: var(--w, 0%);
+      background: var(--bar, var(--success));
+      border-radius: 999px;
+      transition: width 260ms ease;
+    }
+
+    .bar-chart {
+      display: grid;
+      gap: 14px;
+    }
+    .bar-row {
+      display: grid;
+      grid-template-columns: minmax(150px, 210px) 1fr 54px;
+      gap: 12px;
+      align-items: center;
+    }
+    .bar-track {
+      height: 12px;
+      border-radius: 999px;
+      background: var(--surface-3);
+      overflow: hidden;
+    }
+    .bar-fill {
+      height: 100%;
+      width: var(--w);
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--primary), var(--cyan));
+      transition: width 500ms ease;
+    }
+
+    .donut-layout {
+      display: grid;
+      grid-template-columns: 190px 1fr;
+      align-items: center;
+      gap: 24px;
+    }
+    .donut {
+      width: 172px;
+      height: 172px;
+      border-radius: 50%;
+      background: conic-gradient(var(--success) var(--a), var(--warning) var(--a) var(--b), var(--danger) var(--b) 100%);
+      position: relative;
+      box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--line) 60%, transparent);
+    }
+    .donut::after {
+      content: "";
+      position: absolute;
+      inset: 28px;
+      border-radius: 50%;
+      background: var(--surface);
+      border: 1px solid var(--line);
+    }
+    .legend {
+      display: grid;
+      gap: 10px;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      font-weight: 700;
+    }
+    .legend-left { display: inline-flex; align-items: center; gap: 8px; }
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--dot);
+    }
+
+    .stepper {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 24px;
+    }
+    .step {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px;
+      border-radius: 14px;
+      background: var(--surface-2);
+      border: 1px solid var(--line);
+      color: var(--muted);
+      font-weight: 800;
+    }
+    .step-num {
+      width: 28px;
+      height: 28px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      color: var(--muted);
+    }
+    .step.active {
+      background: var(--primary-soft);
+      color: var(--primary);
+      border-color: color-mix(in srgb, var(--primary) 25%, transparent);
+    }
+    .step.active .step-num, .step.done .step-num {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+    .step.done {
+      color: var(--success);
+      background: var(--success-soft);
+      border-color: color-mix(in srgb, var(--success) 25%, transparent);
+    }
+
+    .form-section {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+    }
+    .form-section .wide { grid-column: span 2; }
+    .form-section .full { grid-column: 1 / -1; }
+
+    .check-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 14px;
+      align-items: center;
+      margin-bottom: 18px;
+    }
+    .progress-wrap {
+      display: grid;
+      gap: 8px;
+      min-width: min(100%, 360px);
+    }
+    .progress-track {
+      height: 12px;
+      border-radius: 999px;
+      background: var(--surface-3);
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      width: var(--w, 0%);
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--primary), var(--cyan));
+      transition: width 260ms ease;
+    }
+    .progress-caption {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .criterion-list {
+      display: grid;
+      gap: 14px;
+    }
+    .criterion {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface);
+      overflow: hidden;
+      transition: transform 180ms ease, border-color 200ms ease, box-shadow 200ms ease, background 200ms ease;
+    }
+    .criterion.answered {
+      border-color: color-mix(in srgb, var(--primary) 26%, var(--line));
+      box-shadow: 0 8px 20px color-mix(in srgb, var(--primary) 8%, transparent);
+    }
+    .criterion.sealed { animation: seal 220ms ease both; }
+    @keyframes seal {
+      0% { box-shadow: 0 0 0 color-mix(in srgb, var(--primary) 0%, transparent); }
+      60% { box-shadow: 0 8px 22px color-mix(in srgb, var(--primary) 10%, transparent); }
+      100% { box-shadow: 0 0 0 color-mix(in srgb, var(--primary) 0%, transparent); }
+    }
+    .criterion-head {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 16px;
+      align-items: center;
+      padding: 16px;
+    }
+    .criterion-name {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-weight: 800;
+      line-height: 1.45;
+    }
+    .criterion-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+    .answer-btn {
+      min-height: 34px;
+      padding: 7px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 800;
+      border: 1px solid var(--line);
+      background: var(--surface-2);
+      color: var(--text);
+      transition: transform 180ms ease, background 180ms ease, color 180ms ease, border-color 180ms ease;
+    }
+    .answer-btn:hover { box-shadow: 0 4px 12px color-mix(in srgb, var(--text) 8%, transparent); }
+    .answer-btn.ok.active, .answer-btn.ok:hover { background: var(--success-soft); color: var(--success); border-color: color-mix(in srgb, var(--success) 32%, transparent); }
+    .answer-btn.partial.active, .answer-btn.partial:hover { background: var(--warning-soft); color: var(--warning); border-color: color-mix(in srgb, var(--warning) 32%, transparent); }
+    .answer-btn.no.active, .answer-btn.no:hover { background: var(--danger-soft); color: var(--danger); border-color: color-mix(in srgb, var(--danger) 32%, transparent); }
+    .criterion-obs {
+      display: none;
+      padding: 0 16px 16px;
+      animation: fadeIn 180ms ease both;
+    }
+    .criterion.open .criterion-obs { display: block; }
+
+    .segmented {
+      display: inline-flex;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 3px;
+      background: var(--surface-2);
+    }
+    .segmented button {
+      min-height: 32px;
+      border-radius: 999px;
+      padding: 6px 12px;
+      background: transparent;
+      color: var(--muted);
+      font-weight: 800;
+      font-size: 12px;
+    }
+    .segmented button.active { background: var(--surface); color: var(--primary); box-shadow: var(--shadow); }
+
+    .result-hero {
+      display: grid;
+      grid-template-columns: minmax(220px, 0.6fr) 1fr;
+      gap: 24px;
+      align-items: stretch;
+      margin-bottom: 24px;
+    }
+    .score-box {
+      display: grid;
+      place-items: center;
+      text-align: center;
+      background: linear-gradient(135deg, var(--primary-soft), color-mix(in srgb, var(--cyan) 15%, var(--surface)));
+      border: 1px solid color-mix(in srgb, var(--primary) 18%, var(--line));
+      border-radius: var(--radius);
+      padding: 28px;
+    }
+    .score-value {
+      font-size: clamp(48px, 8vw, 72px);
+      font-weight: 800;
+      line-height: 1;
+      color: var(--primary);
+    }
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+    .summary-tile {
+      padding: 16px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: var(--surface-2);
+    }
+    .summary-tile strong {
+      display: block;
+      font-size: 24px;
+      line-height: 1.1;
+      margin-bottom: 6px;
+    }
+    .detail-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+    .detail-item {
+      padding: 13px;
+      border-radius: var(--radius-sm);
+      background: var(--surface-2);
+      border: 1px solid var(--line);
+    }
+    .detail-item span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      margin-bottom: 5px;
+    }
+    .detail-item strong { font-weight: 800; }
+
+    .actions-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      justify-content: flex-end;
+      margin-top: 20px;
+    }
+
+    .empty-state {
+      display: grid;
+      place-items: center;
+      text-align: center;
+      padding: 42px 18px;
+      color: var(--muted);
+    }
+    .empty-state svg {
+      width: 118px;
+      height: 86px;
+      margin-bottom: 16px;
+      color: var(--primary);
+      opacity: 0.82;
+    }
+    .empty-state h3 {
+      margin: 0 0 8px;
+      color: var(--text);
+      font-size: 16px;
+      font-weight: 800;
+    }
+    .empty-state p { max-width: 450px; margin: 0; line-height: 1.55; }
+
+    .toast-host {
+      position: fixed;
+      z-index: 90;
+      top: 18px;
+      right: 18px;
+      display: grid;
+      gap: 10px;
+      max-width: min(420px, calc(100vw - 36px));
+    }
+    .toast {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--line);
+      border-left: 4px solid var(--primary);
+      border-radius: 14px;
+      box-shadow: var(--shadow-hover);
+      padding: 13px 14px;
+      animation: toastIn 240ms ease both;
+    }
+    .toast.success { border-left-color: var(--success); }
+    .toast.error { border-left-color: var(--danger); }
+    .toast.warning { border-left-color: var(--warning); }
+    .toast.out { animation: toastOut 220ms ease forwards; }
+    @keyframes toastIn {
+      from { opacity: 0; transform: translateX(26px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+    @keyframes toastOut {
+      to { opacity: 0; transform: translateX(26px); }
+    }
+
+    .modal-host {
+      position: fixed;
+      inset: 0;
+      z-index: 80;
+      pointer-events: none;
+    }
+    .modal-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(15,23,42,0.55);
+      display: grid;
+      place-items: center;
+      padding: 18px;
+      opacity: 0;
+      transition: opacity 180ms ease;
+      pointer-events: auto;
+    }
+    .modal-backdrop.show { opacity: 1; }
+    .modal-card {
+      width: min(100%, 520px);
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      box-shadow: var(--shadow-hover);
+      padding: 24px;
+      transform: scale(0.95);
+      transition: transform 180ms ease;
+    }
+    .modal-backdrop.show .modal-card { transform: scale(1); }
+    .modal-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 0 0 10px;
+      font-size: 18px;
+      font-weight: 800;
+    }
+    .modal-body { color: var(--muted); line-height: 1.6; margin-bottom: 20px; }
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .accordion {
+      display: grid;
+      gap: 12px;
+    }
+    .faq-item {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface);
+      overflow: hidden;
+    }
+    .faq-q {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 16px;
+      background: transparent;
+      color: var(--text);
+      font-weight: 800;
+      text-align: left;
+    }
+    .faq-a {
+      display: none;
+      padding: 0 16px 16px;
+      color: var(--muted);
+      line-height: 1.7;
+    }
+    .faq-item.open .faq-a { display: block; animation: fadeIn 180ms ease both; }
+
+    .timeline-chart {
+      width: 100%;
+      height: 210px;
+      border-radius: var(--radius-sm);
+      background: linear-gradient(180deg, color-mix(in srgb, var(--surface-2) 70%, transparent), transparent);
+      border: 1px solid var(--line);
+    }
+
+    /* Premium visual layer */
+    body {
+      background:
+        radial-gradient(circle at 15% -10%, rgba(0, 122, 255, 0.10), transparent 32%),
+        radial-gradient(circle at 88% 8%, rgba(0, 194, 255, 0.10), transparent 26%),
+        var(--bg);
+      line-height: 1.55;
+    }
+
+    body.dark {
+      background:
+        radial-gradient(circle at 12% -8%, rgba(0, 122, 255, 0.22), transparent 34%),
+        radial-gradient(circle at 88% 10%, rgba(0, 194, 255, 0.16), transparent 28%),
+        var(--bg);
+    }
+
+    .login-shell {
+      background:
+        linear-gradient(120deg, rgba(255,255,255,0.96), rgba(245,247,250,0.92)),
+        var(--bg);
+    }
+
+    .login-brand {
+      background:
+        radial-gradient(circle at 24% 18%, rgba(255,255,255,0.26), transparent 22%),
+        radial-gradient(circle at 74% 20%, rgba(0,194,255,0.26), transparent 28%),
+        radial-gradient(circle at 50% 82%, rgba(0,122,255,0.36), transparent 36%),
+        linear-gradient(135deg, #07111F 0%, #123A68 46%, #007AFF 100%);
+    }
+
+    .login-brand::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(115deg, rgba(255,255,255,0.12), transparent 34%),
+        linear-gradient(rgba(255,255,255,0.08) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.08) 1px, transparent 1px);
+      background-size: auto, 44px 44px, 44px 44px;
+      mask-image: linear-gradient(180deg, rgba(0,0,0,0.78), transparent 90%);
+      pointer-events: none;
+    }
+
+    .login-brand > * { position: relative; z-index: 1; }
+
+    .imac-mock {
+      width: min(92%, 620px);
+      margin: 28px 0;
+      padding: 14px;
+      border-radius: 30px;
+      background: rgba(255, 255, 255, 0.18);
+      border: 1px solid rgba(255,255,255,0.30);
+      box-shadow: 0 30px 70px rgba(0,0,0,0.28);
+      backdrop-filter: blur(18px);
+    }
+
+    .imac-screen {
+      aspect-ratio: 16 / 10;
+      border-radius: 22px;
+      padding: 18px;
+      background:
+        linear-gradient(135deg, rgba(255,255,255,0.96), rgba(224,242,254,0.86)),
+        radial-gradient(circle at 75% 22%, rgba(0,194,255,0.16), transparent 35%);
+      color: #0F172A;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .imac-window {
+      display: grid;
+      grid-template-columns: 0.72fr 1fr;
+      gap: 14px;
+      height: 100%;
+    }
+
+    .imac-sidebar, .imac-panel {
+      border-radius: 18px;
+      background: rgba(255,255,255,0.72);
+      border: 1px solid rgba(148,163,184,0.24);
+      box-shadow: 0 12px 30px rgba(15,23,42,0.08);
+      padding: 14px;
+    }
+
+    .imac-dots {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 14px;
+    }
+
+    .imac-dots span {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: #CBD5E1;
+    }
+
+    .imac-line, .imac-bar {
+      height: 10px;
+      border-radius: 999px;
+      background: #DDE8F7;
+      margin-bottom: 10px;
+    }
+
+    .imac-line.short { width: 58%; }
+    .imac-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 14px; }
+    .imac-tile {
+      min-height: 54px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, rgba(0,122,255,0.12), rgba(0,194,255,0.10));
+      border: 1px solid rgba(0,122,255,0.12);
+    }
+    .imac-bar { height: 14px; }
+    .imac-bar.a { width: 82%; background: linear-gradient(90deg, #007AFF, #00C2FF); }
+    .imac-bar.b { width: 64%; background: linear-gradient(90deg, #34C759, #8FE7A4); }
+    .imac-bar.c { width: 42%; background: linear-gradient(90deg, #FFB020, #FFD166); }
+
+    .imac-stand {
+      width: 120px;
+      height: 48px;
+      margin: 0 auto;
+      background: linear-gradient(180deg, rgba(255,255,255,0.40), rgba(255,255,255,0.12));
+      clip-path: polygon(34% 0, 66% 0, 82% 100%, 18% 100%);
+    }
+
+    .imac-base {
+      width: 210px;
+      height: 14px;
+      margin: -2px auto 0;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.30);
+      border: 1px solid rgba(255,255,255,0.26);
+    }
+
+    .login-card, .card, .case-card, .faq-item, .modal-card, .toast {
+      backdrop-filter: blur(18px);
+      background: var(--surface);
+    }
+
+    .login-card {
+      border-radius: 28px;
+      padding: 36px;
+      box-shadow: 0 20px 60px rgba(17,24,39,0.12);
+      animation: loginSlide 560ms var(--ease) both;
+    }
+
+    .login-card h2 { font-size: 28px; }
+    .login-card .intro { font-size: 15px; line-height: 1.7; }
+
+    input, select, textarea {
+      min-height: 46px;
+      border-radius: 14px;
+      background: color-mix(in srgb, var(--surface-solid, #fff) 86%, transparent);
+      transition: border-color 220ms var(--ease), box-shadow 220ms var(--ease), background 220ms var(--ease), transform 220ms var(--ease);
+    }
+
+    input:focus, select:focus, textarea:focus {
+      box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary) 14%, transparent), 0 10px 24px rgba(0,122,255,0.10);
+    }
+
+    .btn, .tab-btn, .icon-btn, .answer-btn, .case-card, .card, .modal-card, .toast {
+      transition-timing-function: var(--ease);
+    }
+
+    .btn {
+      min-height: 42px;
+      border-radius: 14px;
+      font-weight: 750;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary-strong), var(--primary) 52%, var(--cyan));
+      box-shadow: 0 12px 28px rgba(0,122,255,0.22);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 18px 34px rgba(0,122,255,0.26);
+    }
+
+    .topbar {
+      background: color-mix(in srgb, var(--surface) 78%, transparent);
+      backdrop-filter: blur(24px) saturate(1.35);
+      box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset;
+    }
+
+    .topbar-inner { padding: 16px 28px 12px; }
+    .content { padding: 32px 28px; }
+
+    .tab-btn {
+      min-height: 40px;
+      padding: 9px 14px;
+      border: 1px solid transparent;
+    }
+
+    .tab-btn.active {
+      background: color-mix(in srgb, var(--primary) 12%, var(--surface-solid, #fff));
+      box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--primary) 14%, transparent), 0 8px 18px rgba(0,122,255,0.08);
+    }
+
+    .page-head h1 { font-size: clamp(28px, 3vw, 34px); }
+    .page-head p { font-size: 15px; line-height: 1.7; }
+
+    .card {
+      border-radius: var(--radius);
+      padding: 28px;
+      box-shadow: var(--shadow);
+      border-color: var(--line);
+    }
+
+    .card-title h2 { font-size: 17px; }
+
+    .kpi-card::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: linear-gradient(135deg, rgba(255,255,255,0.42), transparent 42%);
+    }
+
+    .kpi-card { animation: kpiIn 420ms var(--ease) both; }
+    .kpi-card:nth-child(n) { animation-delay: 0ms; }
+    .kpi-value { font-size: 32px; letter-spacing: -0.02em; }
+    .kpi-icon { border-radius: 16px; background: color-mix(in srgb, var(--primary) 11%, var(--surface-solid, #fff)); }
+
+    .badge {
+      min-height: 26px;
+      padding: 5px 10px;
+      font-weight: 750;
+      letter-spacing: 0;
+    }
+
+    .table-wrap {
+      border-radius: 18px;
+      background: color-mix(in srgb, var(--surface-solid, #fff) 68%, transparent);
+    }
+
+    th {
+      background: color-mix(in srgb, var(--surface-2) 76%, transparent);
+      font-size: 11px;
+    }
+
+    tbody tr:nth-child(even) { background: color-mix(in srgb, var(--surface-2) 22%, transparent); }
+    tbody tr:hover { background: color-mix(in srgb, var(--primary) 6%, transparent); }
+
+    .case-card:hover, .card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-hover);
+    }
+
+    .card:hover { transform: none; }
+
+    .mini-progress, .progress-track, .bar-track {
+      background: color-mix(in srgb, var(--surface-3) 68%, transparent);
+      box-shadow: inset 0 1px 2px rgba(17,24,39,0.06);
+    }
+
+    .mini-progress span, .progress-fill, .bar-fill {
+      transition: transform 420ms var(--ease);
+      transform-origin: left center;
+    }
+
+    .bar-fill, .progress-fill {
+      background: linear-gradient(90deg, var(--primary-strong), var(--primary), var(--cyan));
+    }
+
+    .donut {
+      filter: drop-shadow(0 14px 24px rgba(17,24,39,0.08));
+    }
+
+    .step, .criterion, .summary-tile, .detail-item {
+      border-radius: 18px;
+      background: color-mix(in srgb, var(--surface-solid, #fff) 68%, transparent);
+    }
+
+    .criterion.answered {
+      background: color-mix(in srgb, var(--primary) 5%, var(--surface));
+      box-shadow: 0 10px 26px rgba(0,122,255,0.08);
+    }
+
+    .criterion-obs {
+      display: grid;
+      grid-template-rows: 0fr;
+      padding: 0 16px;
+      overflow: hidden;
+      opacity: 0;
+      animation: none;
+      transition: grid-template-rows 260ms var(--ease), opacity 220ms var(--ease), padding 260ms var(--ease);
+    }
+
+    .criterion-obs > * { min-height: 0; }
+    .criterion.open .criterion-obs {
+      display: grid;
+      grid-template-rows: 1fr;
+      opacity: 1;
+      padding: 0 16px 16px;
+    }
+
+    .answer-btn {
+      min-height: 36px;
+      padding: 8px 12px;
+      box-shadow: none;
+    }
+
+    .answer-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 18px rgba(17,24,39,0.08);
+    }
+
+    .score-box {
+      border-radius: 24px;
+      background:
+        radial-gradient(circle at 72% 18%, color-mix(in srgb, var(--cyan) 18%, transparent), transparent 35%),
+        linear-gradient(135deg, color-mix(in srgb, var(--primary) 12%, var(--surface)), color-mix(in srgb, var(--surface-solid, #fff) 82%, transparent));
+    }
+
+    .score-value { letter-spacing: -0.05em; }
+
+    .toast {
+      animation: toastIn 300ms var(--ease) both;
+      border-left-width: 3px;
+    }
+    .toast.out { animation: toastOut 240ms var(--ease) forwards; }
+
+    .modal-backdrop {
+      backdrop-filter: blur(8px);
+      transition: opacity 220ms var(--ease);
+    }
+    .modal-card {
+      border-radius: 24px;
+      transform: scale(0.98) translateY(8px);
+      transition: transform 220ms var(--ease), opacity 220ms var(--ease);
+    }
+    .modal-backdrop.show .modal-card { transform: scale(1) translateY(0); }
+
+    .executive-card {
+      background:
+        radial-gradient(circle at 80% 10%, color-mix(in srgb, var(--cyan) 13%, transparent), transparent 34%),
+        var(--surface);
+    }
+
+    .insight-list {
+      display: grid;
+      gap: 10px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .insight-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 12px;
+      border-radius: 16px;
+      background: color-mix(in srgb, var(--surface-2) 52%, transparent);
+      color: var(--text);
+      line-height: 1.55;
+    }
+
+    .insight-list i { margin-top: 2px; color: var(--primary); }
+
+    @media (max-width: 1100px) {
+      .grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .grid-3, .grid-2 { grid-template-columns: 1fr; }
+      .filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .donut-layout, .result-hero { grid-template-columns: 1fr; }
+      .donut { margin: 0 auto; }
+      .detail-grid, .form-section { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .form-section .wide { grid-column: 1 / -1; }
+      .topbar-inner { grid-template-columns: 1fr auto; }
+      .tabs { grid-column: 1 / -1; order: 3; }
+    }
+
+    @media (max-width: 720px) {
+      .login-shell { grid-template-columns: 1fr; }
+      .login-brand { display: none; }
+      .login-form-wrap { padding: 22px; align-content: center; }
+      .mobile-logo { display: flex; }
+      .login-card { padding: 24px; border-radius: 20px; }
+      .login-footer { position: static; margin-top: 24px; }
+      .content { padding: 18px; }
+      .topbar-inner { padding: 12px 14px 8px; }
+      .app-brand span { display: none; }
+      .user-chip .user-meta { display: none; }
+      .page-head { flex-direction: column; }
+      .filters, .grid-4, .summary-grid, .detail-grid, .form-section { grid-template-columns: 1fr; }
+      .case-card { grid-template-columns: 1fr; }
+      .case-actions { justify-content: flex-start; }
+      .criterion-head { grid-template-columns: 1fr; }
+      .criterion-actions { justify-content: flex-start; }
+      .stepper { gap: 8px; }
+      .step { padding: 10px 8px; font-size: 12px; flex-direction: column; align-items: flex-start; }
+      .bar-row { grid-template-columns: 1fr; gap: 8px; }
+      .card { padding: 18px; }
+      .actions-row { justify-content: stretch; }
+      .actions-row .btn { flex: 1 1 auto; }
+    }
+  </style>
+</head>
+<body>
+  <div id="toastHost" class="toast-host"></div>
+  <div id="modalHost" class="modal-host"></div>
+
+  <section id="loginView" class="login-shell">
+    <aside class="login-brand" aria-hidden="true">
+      <div class="brand-mark">
+        <span class="brand-logo">
+          <svg viewBox="0 0 48 48" fill="none" aria-hidden="true">
+            <path d="M12 13.5C12 10.46 14.46 8 17.5 8h13C33.54 8 36 10.46 36 13.5v21C36 37.54 33.54 40 30.5 40h-13C14.46 40 12 37.54 12 34.5v-21Z" stroke="currentColor" stroke-width="3"/>
+            <path d="M18 19h12M18 25h12M18 31h7" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+          </svg>
+        </span>
+        Gestão de Auditoria
+      </div>
+      <div>
+        <h1>Gestão de Auditoria</h1>
+        <p>Controle interno de auditorias, SLA, histórico e indicadores operacionais.</p>
+      </div>
+      <div class="imac-mock">
+        <div class="imac-screen">
+          <div class="imac-window">
+            <div class="imac-sidebar">
+              <div class="imac-dots"><span></span><span></span><span></span></div>
+              <div class="imac-line"></div>
+              <div class="imac-line short"></div>
+              <div class="imac-line"></div>
+              <div class="imac-line short"></div>
+            </div>
+            <div class="imac-panel">
+              <div class="imac-grid">
+                <div class="imac-tile"></div>
+                <div class="imac-tile"></div>
+                <div class="imac-tile"></div>
+                <div class="imac-tile"></div>
+              </div>
+              <div class="imac-bar a"></div>
+              <div class="imac-bar b"></div>
+              <div class="imac-bar c"></div>
+            </div>
+          </div>
+        </div>
+        <div class="imac-stand"></div>
+        <div class="imac-base"></div>
+      </div>
+      <span class="version-pill"><i class="ph ph-shield-check"></i> Protótipo navegável v0.9</span>
+    </aside>
+
+    <main class="login-form-wrap">
+      <form id="loginForm" class="login-card" novalidate>
+        <div class="mobile-logo">
+          <span class="brand-logo">
+            <svg viewBox="0 0 48 48" fill="none" aria-hidden="true">
+              <path d="M12 13.5C12 10.46 14.46 8 17.5 8h13C33.54 8 36 10.46 36 13.5v21C36 37.54 33.54 40 30.5 40h-13C14.46 40 12 37.54 12 34.5v-21Z" stroke="currentColor" stroke-width="3"/>
+              <path d="M18 19h12M18 25h12M18 31h7" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+            </svg>
+          </span>
+          Gestão de Auditoria
+        </div>
+        <h2>Entrar no sistema</h2>
+        <p class="intro">Acesse com seu usuário interno para carregar suas filas, dashboards e auditorias.</p>
+        <div class="form-grid">
+          <div class="form-row" id="loginUserRow">
+            <label for="loginUser">Usuário</label>
+            <input id="loginUser" autocomplete="username" placeholder="Digite seu login">
+            <div class="error-msg" id="loginUserError"></div>
+          </div>
+          <div class="form-row" id="loginPassRow">
+            <label for="loginPass">Senha</label>
+            <div class="field-wrap">
+              <input id="loginPass" type="password" autocomplete="current-password" placeholder="Digite sua senha" style="padding-right:46px">
+              <button type="button" class="password-toggle" onclick="togglePassword()" aria-label="Mostrar ou ocultar senha">
+                <i id="passwordIcon" class="ph ph-eye"></i>
+              </button>
+            </div>
+            <div class="error-msg" id="loginPassError"></div>
+          </div>
+          <button id="loginButton" class="btn btn-primary" type="submit">
+            <i class="ph ph-sign-in"></i>
+            Entrar
+          </button>
+          <div class="error-msg" id="loginError"></div>
+        </div>
+      </form>
+      <div class="login-footer">© 2025 Gestão de Auditoria — Uso interno</div>
+    </main>
+  </section>
+
+  <section id="appView" class="app-shell hidden">
+    <header class="topbar">
+      <div class="topbar-inner">
+        <div class="app-brand">
+          <span class="brand-logo">
+            <svg viewBox="0 0 48 48" fill="none" aria-hidden="true">
+              <path d="M12 13.5C12 10.46 14.46 8 17.5 8h13C33.54 8 36 10.46 36 13.5v21C36 37.54 33.54 40 30.5 40h-13C14.46 40 12 37.54 12 34.5v-21Z" stroke="currentColor" stroke-width="3"/>
+              <path d="M18 19h12M18 25h12M18 31h7" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+            </svg>
+          </span>
+          <span>Gestão de Auditoria</span>
+        </div>
+        <nav id="tabs" class="tabs" aria-label="Navegação principal"></nav>
+        <div class="top-actions">
+          <button id="themeToggle" class="icon-btn" onclick="toggleTheme()" aria-label="Alternar tema">
+            <i class="ph ph-moon"></i>
+          </button>
+          <div id="userChip" class="user-chip"></div>
+          <button class="icon-btn" onclick="logout()" aria-label="Sair">
+            <i class="ph ph-sign-out"></i>
+          </button>
+        </div>
+      </div>
+    </header>
+    <main id="appContent" class="content"></main>
+  </section>
+
+  <script>
+    const DAY = 24 * 60 * 60 * 1000;
+    const STATUS = { PENDENTE: "pendente", CONCLUIDO: "concluido" };
+    const ANSWERS = {
+      OK: "Atendeu",
+      PARTIAL: "Atendeu parcialmente",
+      NO: "Nao atendeu"
+    };
+
+    const state = {
+      currentUser: null,
+      currentTab: null,
+      theme: "light",
+      config: { slaDays: 15 },
+      users: [],
+      cases: [],
+      audits: [],
+      currentAudit: null,
+      filters: {
+        queueStatus: "todos",
+        queueBpo: "todos",
+        queueType: "todos",
+        queueSearch: "",
+        historyBpo: "todos",
+        historySearch: "",
+        historyAttendant: "",
+        historyDate: "",
+        historyClass: "todos",
+        globalAuditor: "todos",
+        globalBpo: "todos",
+        globalType: "todos",
+        globalClass: "todos",
+        globalSearch: "",
+        globalAttendant: "",
+        globalDate: "",
+        dashboardPeriod: "todos",
+        dashboardStart: "",
+        dashboardEnd: "",
+        dashboardAuditor: "todos",
+        dashboardBpo: "todos",
+        dashboardType: "todos",
+        importSearch: "",
+        adminCaseSearch: ""
+      },
+      importPreview: [],
+      faqOpen: {},
+      saveLoading: false,
+      loginLoading: false,
+      modalOnClose: null
+    };
+
+    const criteriaCatalog = {
+      "Telefonica Basica": [
+        ["Se identificou + Identificou a BPO?", 7.7],
+        ["Comunicação Cordial e Efetiva?", 7.7],
+        ["Avisou que buscaria informações antes de deixar o cliente em espera?", 7.7],
+        ["Teve uma escuta Atenciosa, Interessada/Empática?", 7.7],
+        ["Passou informações Corretas e Completas?", 7.7],
+        ["Foi didático(a) na explicação?", 7.7],
+        ["Passou segurança/credibilidade?", 7.7],
+        ["Utilizou inteligência emocional no atendimento?", 7.7],
+        ["Foi eficiente?", 7.7],
+        ["Confirmou se o cliente entendeu a explicação?", 7.7],
+        ["Realizou a confirmação de dados de segurança?", 7.7],
+        ["Fez argumentações pertinentes?", 7.7],
+        ["Teve agilidade na busca de informações?", 7.6]
+      ],
+      "Telefonica Tecnica": [
+        ["Se identificou + identificou a empresa que trabalha?", 7.7],
+        ["Linguajar apropriado / Educação durante o contato?", 7.7],
+        ["Avisou que buscaria informações antes de deixar o cliente em espera?", 7.7],
+        ["Teve uma escuta Atenciosa, Interessada/Empática?", 7.7],
+        ["Passou informações Corretas e Completas?", 7.7],
+        ["Foi didático(a) na explicação?", 7.7],
+        ["Passou segurança/credibilidade?", 7.7],
+        ["Utilizou inteligência emocional no atendimento?", 7.7],
+        ["Foi eficiente?", 7.7],
+        ["Confirmou se o cliente entendeu a explicação?", 7.7],
+        ["Realizou a confirmação de dados de segurança?", 7.7],
+        ["Fez argumentações pertinentes?", 7.7],
+        ["Teve agilidade na busca de informações?", 7.6]
+      ],
+      "Escrita Mensageria": [
+        ["Comunicação foi direta e clara?", 20],
+        ["Escrita de forma simples e de fácil entendimento ao cliente?", 20],
+        ["Utilizou vocabulário adequado?", 20],
+        ["Concordância e gramática apropriadas?", 20],
+        ["Seguiu o script padrão?", 20]
+      ]
+    };
+
+    const labels = {
+      "Telefonica Basica": "Telefônica Básica",
+      "Telefonica Tecnica": "Telefônica Técnica",
+      "Escrita Mensageria": "Escrita / Mensageria"
+    };
+
+    function dateOffset(days) {
+      const d = new Date();
+      d.setHours(12, 0, 0, 0);
+      d.setDate(d.getDate() + days);
+      return d.toISOString().slice(0, 10);
+    }
+
+    function todayISO() {
+      return dateOffset(0);
+    }
+
+    function fmtDate(iso) {
+      if (!iso) return "-";
+      const [y, m, d] = iso.slice(0, 10).split("-");
+      return `${d}/${m}/${y}`;
+    }
+
+    function daysBetween(fromISO, to = new Date()) {
+      const from = new Date(`${fromISO}T12:00:00`);
+      const until = new Date(to);
+      until.setHours(12, 0, 0, 0);
+      return Math.floor((until - from) / DAY);
+    }
+
+    function escapeHTML(value) {
+      return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function icon(name) {
+      return `<i class="ph ${name}"></i>`;
+    }
+
+    function nextId(list) {
+      return list.length ? Math.max(...list.map(item => item.id)) + 1 : 1;
+    }
+
+    function initMockData() {
+      state.users = [
+        { id: 1, nome: "Admin Qualidade", login: "admin", senha: "admin", perfil: "admin", ativo: true, criadoEm: dateOffset(-90) },
+        { id: 2, nome: "Marina Lopes", login: "auditor1", senha: "auditor1", perfil: "auditor", ativo: true, criadoEm: dateOffset(-80) },
+        { id: 3, nome: "Rafael Nunes", login: "auditor2", senha: "auditor2", perfil: "auditor", ativo: true, criadoEm: dateOffset(-76) },
+        { id: 4, nome: "Admin Operações", login: "admin2", senha: "admin2", perfil: "admin", ativo: true, criadoEm: dateOffset(-70) },
+        { id: 5, nome: "Desenvolvedor", login: "dev", senha: "dev", perfil: "desenvolvedor", ativo: true, criadoEm: dateOffset(-65) }
+      ];
+
+      state.cases = [
+        mockCase(1, 2, -12, STATUS.PENDENTE, "Ana Beatriz", "BPO Norte", "Telefonica Basica", "Receptiva", "06:42", "Consulta de boleto", "CTR-1009"),
+        mockCase(2, 2, -3, STATUS.PENDENTE, "Carlos Lima", "BPO Sul", "Telefonica Tecnica", "Ativa", "09:11", "Suporte técnico", "CTR-1012"),
+        mockCase(3, 3, -16, STATUS.PENDENTE, "Rita Campos", "BPO Norte", "Telefonica Basica", "Receptiva", "04:38", "Renegociação", "CTR-1015"),
+        mockCase(4, 3, -10, STATUS.PENDENTE, "João Pedro", "BPO Leste", "Escrita Mensageria", "Chat", "12:05", "Contestação", "CTR-1018"),
+        mockCase(5, 2, -20, STATUS.CONCLUIDO, "Bianca Vieira", "BPO Sul", "Telefonica Basica", "Receptiva", "08:21", "Segunda via", "CTR-1021", dateOffset(-6)),
+        mockCase(6, 3, -9, STATUS.CONCLUIDO, "Lucas Ramos", "BPO Leste", "Escrita Mensageria", "WhatsApp", "15:28", "Cancelamento", "CTR-1024", dateOffset(-2)),
+        mockCase(7, null, -1, STATUS.PENDENTE, "Patrícia Melo", "BPO Oeste", "Telefonica Tecnica", "Receptiva", "07:47", "Instabilidade", "CTR-1029"),
+        mockCase(8, 2, -14, STATUS.PENDENTE, "Felipe Dias", "BPO Norte", "Escrita Mensageria", "Chat", "10:31", "Alteração cadastral", "CTR-1032"),
+        mockCase(9, 3, -5, STATUS.PENDENTE, "Helena Martins", "BPO Sul", "Telefonica Tecnica", "Ativa", "05:12", "Confirmação de dados", "CTR-1035"),
+        mockCase(10, 2, -18, STATUS.CONCLUIDO, "Nicolas Alves", "BPO Norte", "Telefonica Tecnica", "Receptiva", "11:09", "Falha no acesso", "CTR-1038", dateOffset(-8)),
+        mockCase(11, 3, -22, STATUS.CONCLUIDO, "Laura Costa", "BPO Oeste", "Telefonica Basica", "Ativa", "03:59", "Retenção", "CTR-1041", dateOffset(-12))
+      ];
+
+      state.audits = [];
+      createMockAudit(5, 2, [
+        ANSWERS.OK, ANSWERS.OK, ANSWERS.OK, ANSWERS.OK, ANSWERS.OK, ANSWERS.OK, ANSWERS.OK,
+        ANSWERS.OK, ANSWERS.OK, ANSWERS.PARTIAL, ANSWERS.OK, ANSWERS.OK, ANSWERS.PARTIAL
+      ], "Atendimento seguro, com pequenos pontos de reforço no fechamento.", dateOffset(-6));
+      createMockAudit(6, 3, [
+        ANSWERS.OK, ANSWERS.PARTIAL, ANSWERS.PARTIAL, ANSWERS.NO, ANSWERS.OK
+      ], "Texto objetivo, mas o script não foi seguido integralmente.", dateOffset(-2));
+      createMockAudit(10, 2, [
+        ANSWERS.OK, ANSWERS.OK, ANSWERS.PARTIAL, ANSWERS.OK, ANSWERS.PARTIAL, ANSWERS.OK, ANSWERS.OK,
+        ANSWERS.PARTIAL, ANSWERS.OK, ANSWERS.OK, ANSWERS.OK, ANSWERS.PARTIAL, ANSWERS.PARTIAL
+      ], "Bom domínio técnico; atenção à agilidade na busca de informações.", dateOffset(-8));
+      createMockAudit(11, 3, [
+        ANSWERS.OK, ANSWERS.OK, ANSWERS.OK, ANSWERS.OK, ANSWERS.NO, ANSWERS.PARTIAL, ANSWERS.OK,
+        ANSWERS.OK, ANSWERS.OK, ANSWERS.OK, ANSWERS.OK, ANSWERS.PARTIAL, ANSWERS.OK
+      ], "Auditoria revisada com pontos críticos em informação correta.", dateOffset(-12));
+    }
+
+    function mockCase(id, auditorId, assignedOffset, status, atendente, bpo, tipoAuditoria, tipoLigacao, tempoLigacao, propostaConsulta, contrato, completedAt = null) {
+      return {
+        id,
+        auditorId,
+        atendente,
+        cliente: tipoAuditoria === "Escrita Mensageria" ? atendente : "",
+        bpo,
+        tipoAuditoria,
+        tipoLigacao,
+        tempoLigacao,
+        propostaConsulta,
+        contrato,
+        idCaso: `AUD-${String(2026000 + id).slice(-6)}`,
+        status,
+        criadoEm: dateOffset(assignedOffset - 1),
+        importadoEm: dateOffset(assignedOffset - 1),
+        assignedAt: dateOffset(assignedOffset),
+        completedAt,
+        createdManually: false
+      };
+    }
+
+    function createMockAudit(caseId, auditorId, answers, obs, date) {
+      const c = state.cases.find(item => item.id === caseId);
+      const criteria = getCriteria(c.tipoAuditoria).map((crit, index) => ({
+        criterioNome: crit.nome,
+        peso: crit.peso,
+        resposta: answers[index] || ANSWERS.OK,
+        observacaoIndividual: index % 4 === 0 ? "Registro de exemplo para validar o detalhamento." : ""
+      }));
+      const nota = calculateScore(criteria);
+      state.audits.push({
+        id: nextId(state.audits),
+        caseId,
+        auditorId,
+        criterios: criteria,
+        notaFinal: nota,
+        classificacao: classify(nota),
+        observacaoGeral: obs,
+        concluidaEm: date,
+        manualSimplified: false
+      });
+    }
+
+    function getCriteria(type) {
+      return (criteriaCatalog[type] || []).map(([nome, peso]) => ({ nome, peso }));
+    }
+
+    function answerWeight(answer) {
+      if (answer === ANSWERS.OK) return 1;
+      if (answer === ANSWERS.PARTIAL) return 0.5;
+      return 0;
+    }
+
+    function calculateScore(criteria) {
+      const total = criteria.reduce((sum, item) => sum + Number(item.peso || 0), 0) || 100;
+      const score = criteria.reduce((sum, item) => sum + Number(item.peso || 0) * answerWeight(item.resposta), 0);
+      return Math.round((score / total) * 1000) / 10;
+    }
+
+    function classify(score) {
+      if (score >= 90) return "Excelente";
+      if (score >= 70) return "Regular";
+      return "Crítico";
+    }
+
+    function classVariant(classificacao) {
+      if (classificacao === "Excelente") return "success";
+      if (classificacao === "Regular") return "warning";
+      return "danger";
+    }
+
+    function statusBadge(status) {
+      return status === STATUS.CONCLUIDO
+        ? `<span class="badge success">${icon("ph-check-circle")} Concluído</span>`
+        : `<span class="badge warning">${icon("ph-clock")} Pendente</span>`;
+    }
+
+    function slaInfo(c) {
+      if (!c.assignedAt) {
+        return { daysUsed: 0, daysLeft: state.config.slaDays, overdue: false, percent: 0, label: "Sem atribuição", variant: "neutral", color: "var(--muted)" };
+      }
+      const daysUsed = Math.max(0, daysBetween(c.assignedAt));
+      const daysLeft = state.config.slaDays - daysUsed;
+      const overdue = c.status !== STATUS.CONCLUIDO && daysLeft < 0;
+      const percent = Math.min(100, Math.max(0, (daysUsed / state.config.slaDays) * 100));
+      let variant = "success";
+      let color = "var(--success)";
+      if (overdue || daysLeft <= 3) {
+        variant = "danger";
+        color = "var(--danger)";
+      } else if (daysLeft <= 7) {
+        variant = "warning";
+        color = "var(--warning)";
+      }
+      const label = c.status === STATUS.CONCLUIDO
+        ? "SLA encerrado"
+        : overdue
+          ? `${Math.abs(daysLeft)} dia(s) em atraso`
+          : `${daysLeft} dia(s) restantes`;
+      return { daysUsed, daysLeft, overdue, percent, label, variant, color };
+    }
+
+    function activeAuditors() {
+      return state.users.filter(u => u.perfil === "auditor" && u.ativo);
+    }
+
+    function hasManagerAccess(user = state.currentUser) {
+      return !!user && (user.perfil === "admin" || user.perfil === "desenvolvedor");
+    }
+
+    function profileLabel(perfil) {
+      if (perfil === "admin") return "Administrador";
+      if (perfil === "desenvolvedor") return "Desenvolvedor";
+      return "Auditor";
+    }
+
+    function userById(id) {
+      return state.users.find(u => u.id === id);
+    }
+
+    function caseById(id) {
+      return state.cases.find(c => c.id === id);
+    }
+
+    function caseSubject(c) {
+      if (!c) return "-";
+      return c.tipoAuditoria === "Escrita Mensageria" ? (c.cliente || c.atendente || "-") : (c.atendente || c.cliente || "-");
+    }
+
+    function caseSearchText(c, audit = null) {
+      const auditor = userById(audit?.auditorId || c.auditorId);
+      return [
+        c.idCaso,
+        c.atendente,
+        c.cliente,
+        c.bpo,
+        c.tipoAuditoria,
+        labels[c.tipoAuditoria],
+        c.tipoLigacao,
+        c.propostaConsulta,
+        c.contrato,
+        auditor?.nome,
+        auditor?.login,
+        audit?.classificacao,
+        audit?.notaFinal
+      ].filter(Boolean).join(" ").toLowerCase();
+    }
+
+    function generateCaseCode() {
+      const id = nextId(state.cases);
+      return `AUD-${String(2026000 + id).slice(-6)}`;
+    }
+
+    function auditById(id) {
+      return state.audits.find(a => a.id === id);
+    }
+
+    function auditForCase(caseId) {
+      return state.audits.find(a => a.caseId === caseId);
+    }
+
+    document.getElementById("loginForm").addEventListener("submit", handleLogin);
+
+    function togglePassword() {
+      const input = document.getElementById("loginPass");
+      const iconEl = document.getElementById("passwordIcon");
+      input.type = input.type === "password" ? "text" : "password";
+      iconEl.className = input.type === "password" ? "ph ph-eye" : "ph ph-eye-slash";
+    }
+
+    function handleLogin(event) {
+      event.preventDefault();
+      if (state.loginLoading) return;
+      const login = document.getElementById("loginUser").value.trim();
+      const senha = document.getElementById("loginPass").value;
+      clearLoginErrors();
+      let hasError = false;
+      if (!login) {
+        markLoginError("loginUser", "Informe o usuário.");
+        hasError = true;
+      }
+      if (!senha) {
+        markLoginError("loginPass", "Informe a senha.");
+        hasError = true;
+      }
+      if (hasError) return;
+
+      state.loginLoading = true;
+      const btn = document.getElementById("loginButton");
+      btn.innerHTML = `<span class="spinner"></span> Entrando`;
+      btn.disabled = true;
+
+      setTimeout(() => {
+        const user = state.users.find(u => u.login === login && u.senha === senha && u.ativo);
+        state.loginLoading = false;
+        btn.disabled = false;
+        btn.innerHTML = `${icon("ph-sign-in")} Entrar`;
+        if (!user) {
+          document.getElementById("loginError").textContent = "Usuário ou senha inválidos, ou usuário inativo.";
+          return;
+        }
+        state.currentUser = user;
+        state.currentTab = hasManagerAccess(user) ? "adminDashboard" : "queue";
+        state.currentAudit = null;
+        document.getElementById("loginView").classList.add("hidden");
+        document.getElementById("appView").classList.remove("hidden");
+        renderApp();
+        showToast(`Bem-vindo, ${user.nome}.`, "success");
+      }, 650);
+    }
+
+    function clearLoginErrors() {
+      ["loginUser", "loginPass"].forEach(id => {
+        document.getElementById(`${id}Row`).classList.remove("invalid");
+        document.getElementById(`${id}Error`).textContent = "";
+      });
+      document.getElementById("loginError").textContent = "";
+    }
+
+    function markLoginError(id, message) {
+      document.getElementById(`${id}Row`).classList.add("invalid");
+      document.getElementById(`${id}Error`).textContent = message;
+    }
+
+    function logout() {
+      state.currentUser = null;
+      state.currentTab = null;
+      state.currentAudit = null;
+      document.getElementById("appView").classList.add("hidden");
+      document.getElementById("loginView").classList.remove("hidden");
+      document.getElementById("loginForm").reset();
+      showToast("Sessão encerrada.", "info");
+    }
+
+    function toggleTheme() {
+      state.theme = state.theme === "light" ? "dark" : "light";
+      document.body.classList.toggle("dark", state.theme === "dark");
+      document.getElementById("themeToggle").innerHTML = state.theme === "dark" ? icon("ph-sun") : icon("ph-moon");
+      showToast(state.theme === "dark" ? "Tema escuro ativado." : "Tema claro ativado.", "info");
+    }
+
+    function tabsForCurrentUser() {
+      if (!state.currentUser) return [];
+      if (hasManagerAccess()) {
+        return [
+          ["adminDashboard", "ph-gauge", "Dashboard Global"],
+          ["importCases", "ph-upload-simple", "Importar Casos"],
+          ["globalHistory", "ph-clock-counter-clockwise", "Histórico Global"],
+          ["createAudit", "ph-clipboard-text", "Criar Auditoria"],
+          ["myAudits", "ph-list-checks", "Minhas Auditorias"],
+          ["users", "ph-users", "Usuários"],
+          ["help", "ph-question", "Ajuda"]
+        ];
+      }
+      return [
+        ["queue", "ph-list-bullets", "Minha Lista"],
+        ["newAudit", "ph-clipboard-text", "Nova Auditoria"],
+        ["myHistory", "ph-clock-counter-clockwise", "Meu Histórico"],
+        ["myDashboard", "ph-chart-line-up", "Meu Dashboard"],
+        ["help", "ph-question", "Ajuda"]
+      ];
+    }
+
+    function setTab(tab) {
+      state.currentTab = tab;
+      renderApp();
+    }
+
+    function renderApp() {
+      if (!state.currentUser) return;
+      renderTabs();
+      renderUserChip();
+      renderActiveTab();
+    }
+
+    function renderTabs() {
+      document.getElementById("tabs").innerHTML = tabsForCurrentUser().map(([id, iconName, label]) => `
+        <button class="tab-btn ${state.currentTab === id ? "active" : ""} ${id === "importCases" ? "import-tab" : ""}" onclick="setTab('${id}')">
+          ${icon(iconName)} <span>${label}</span>
+        </button>
+      `).join("");
+    }
+
+    function renderUserChip() {
+      const user = state.currentUser;
+      document.getElementById("userChip").innerHTML = `
+        <span class="avatar">${escapeHTML(user.nome.split(" ").map(p => p[0]).slice(0, 2).join(""))}</span>
+        <span class="user-meta">
+          <strong>${escapeHTML(user.nome)}</strong><br>
+          <span class="caption">${profileLabel(user.perfil)}</span>
+        </span>
+      `;
+    }
+
+    function renderActiveTab() {
+      const el = document.getElementById("appContent");
+      const views = {
+        adminDashboard: renderAdminDashboard,
+        globalHistory: renderGlobalHistory,
+        importCases: renderImportCases,
+        users: renderUsers,
+        createAudit: renderCreateAudit,
+        myAudits: renderMyAudits,
+        queue: renderQueue,
+        newAudit: renderNewAudit,
+        myHistory: renderMyHistory,
+        myDashboard: renderMyDashboard,
+        help: renderHelp
+      };
+      el.innerHTML = `<div class="tab-panel">${(views[state.currentTab] || renderHelp)()}</div>`;
+    }
+
+    function pageHead(title, subtitle, action = "") {
+      return `
+        <div class="page-head">
+          <div>
+            <h1>${title}</h1>
+            <p>${subtitle}</p>
+          </div>
+          <div>${action}</div>
+        </div>
+      `;
+    }
+
+    function kpi(label, value, iconName, caption = "", variant = "info") {
+      return `
+        <div class="card kpi-card">
+          <div class="kpi-top">
+            <div>
+              <div class="kpi-label">${label}</div>
+            </div>
+            <span class="kpi-icon">${icon(iconName)}</span>
+          </div>
+          <div class="kpi-value">${value}</div>
+          <div class="caption">${caption}</div>
+        </div>
+      `;
+    }
+
+    function renderQueue() {
+      const mine = state.cases.filter(c => c.auditorId === state.currentUser.id);
+      const filtered = mine.filter(c => {
+        const byStatus = state.filters.queueStatus === "todos" || c.status === state.filters.queueStatus;
+        const byBpo = state.filters.queueBpo === "todos" || c.bpo === state.filters.queueBpo;
+        const byType = state.filters.queueType === "todos" || c.tipoAuditoria === state.filters.queueType;
+        const bySearch = !state.filters.queueSearch || caseSearchText(c).includes(state.filters.queueSearch.toLowerCase());
+        return byStatus && byBpo && byType && bySearch;
+      });
+      return `
+        ${pageHead("Minha Lista", "Casos atribuídos ao seu login e auditorias avulsas criadas por você, com SLA individual por data de atribuição.")}
+        ${queueFilters()}
+        <div class="case-list">
+          ${filtered.length ? filtered.map(renderCaseCard).join("") : emptyState("Nenhum caso encontrado", "Ajuste os filtros ou aguarde uma nova distribuição de casos para sua fila.")}
+        </div>
+      `;
+    }
+
+    function queueFilters() {
+      return `
+        <div class="card" style="margin-bottom:24px">
+          <div class="filters">
+            ${selectField("Status", "queueStatus", [
+              ["todos", "Todos"],
+              [STATUS.PENDENTE, "Pendente"],
+              [STATUS.CONCLUIDO, "Concluído"]
+            ])}
+            ${selectField("BPO", "queueBpo", [["todos", "Todos"], ...uniqueOptions(state.cases.map(c => c.bpo))])}
+            ${selectField("Tipo", "queueType", [["todos", "Todos"], ...Object.keys(criteriaCatalog).map(t => [t, labels[t]])])}
+            <div class="form-row">
+              <label>Pesquisar</label>
+              <input value="${escapeHTML(state.filters.queueSearch)}" oninput="state.filters.queueSearch=this.value; renderActiveTab();" placeholder="Nome, ID, contrato, proposta">
+            </div>
+            <div class="form-row">
+              <label>&nbsp;</label>
+              <button class="btn btn-secondary" onclick="resetQueueFilters()">${icon("ph-funnel")} Limpar filtros</button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function selectField(label, filterKey, options) {
+      return `
+        <div class="form-row">
+          <label>${label}</label>
+          <select onchange="setFilter('${filterKey}', this.value)">
+            ${options.map(([value, text]) => `<option value="${escapeHTML(value)}" ${state.filters[filterKey] === value ? "selected" : ""}>${escapeHTML(text)}</option>`).join("")}
+          </select>
+        </div>
+      `;
+    }
+
+    function uniqueOptions(values) {
+      return [...new Set(values.filter(Boolean))].sort().map(v => [v, v]);
+    }
+
+    function setFilter(key, value) {
+      state.filters[key] = value;
+      renderActiveTab();
+    }
+
+    function resetQueueFilters() {
+      state.filters.queueStatus = "todos";
+      state.filters.queueBpo = "todos";
+      state.filters.queueType = "todos";
+      state.filters.queueSearch = "";
+      renderActiveTab();
+    }
+
+    function renderCaseCard(c, adminMode = false) {
+      const sla = slaInfo(c);
+      const auditor = c.auditorId ? userById(c.auditorId) : null;
+      const actionLabel = c.status === STATUS.CONCLUIDO ? "Ver auditoria" : "Iniciar auditoria";
+      return `
+        <article class="case-card" onclick="${c.status === STATUS.CONCLUIDO ? `openAuditReadByCase(${c.id})` : `startAudit(${c.id}, '${adminMode ? "admin" : "auditor"}')`}">
+          <div class="case-main">
+            <h3>${escapeHTML(c.idCaso)} · ${escapeHTML(caseSubject(c))}</h3>
+            <div class="case-meta">
+              ${statusBadge(c.status)}
+              <span class="badge info">${escapeHTML(c.bpo)}</span>
+              <span class="badge neutral">${escapeHTML(labels[c.tipoAuditoria] || c.tipoAuditoria)}</span>
+              ${auditor ? `<span class="badge neutral">${icon("ph-user")} ${escapeHTML(auditor.nome)}</span>` : `<span class="badge neutral">${icon("ph-user-minus")} Sem auditor</span>`}
+            </div>
+            <div class="sla-line">
+              <span class="badge ${sla.variant}">${icon(sla.overdue ? "ph-warning-circle" : "ph-clock")} ${sla.label}</span>
+              <div class="mini-progress"><span style="--w:${sla.percent}%;--bar:${sla.color}"></span></div>
+              <span class="caption">Atribuído em ${fmtDate(c.assignedAt)} · SLA ${state.config.slaDays} dias</span>
+            </div>
+          </div>
+          <div class="case-actions">
+            <button class="btn ${c.status === STATUS.CONCLUIDO ? "btn-secondary" : "btn-primary"}" onclick="event.stopPropagation(); ${c.status === STATUS.CONCLUIDO ? `openAuditReadByCase(${c.id})` : `startAudit(${c.id}, '${adminMode ? "admin" : "auditor"}')`}">
+              ${icon(c.status === STATUS.CONCLUIDO ? "ph-eye" : "ph-play")} ${actionLabel}
+            </button>
+          </div>
+        </article>
+      `;
+    }
+
+    function renderNewAudit() {
+      if (state.currentAudit && state.currentAudit.context === "auditor") {
+        return renderAuditWorkspace();
+      }
+      const pending = state.cases.filter(c => c.auditorId === state.currentUser.id && c.status === STATUS.PENDENTE);
+      return `
+        ${pageHead("Nova Auditoria", "Inicie um caso atribuído ou cadastre uma auditoria avulsa com os dados mínimos de cada tipo.")}
+        <div class="card" style="margin-bottom:24px;border-color:color-mix(in srgb,var(--primary) 28%,var(--line));">
+          <div class="card-title">
+            <div>
+              <h2>Cadastrar auditoria avulsa</h2>
+              <p class="caption" style="margin:6px 0 0">Use quando a auditoria não veio de uma importação. O ID é gerado automaticamente.</p>
+            </div>
+            <button class="btn btn-primary" onclick="startManualAudit('auditor')">${icon("ph-plus-circle")} Nova auditoria avulsa</button>
+          </div>
+        </div>
+        <div class="case-list">
+          ${pending.length ? pending.map(c => renderCaseCard(c)).join("") : emptyState("Sua fila pendente está vazia", "Quando novos casos forem importados e distribuídos, eles aparecerão aqui para auditoria.")}
+        </div>
+      `;
+    }
+
+    function renderCreateAudit() {
+      if (state.currentAudit && state.currentAudit.context === "admin") {
+        return renderAuditWorkspace();
+      }
+      const term = state.filters.adminCaseSearch.toLowerCase();
+      const pending = state.cases.filter(c => c.status === STATUS.PENDENTE).filter(c => {
+        return !term || caseSearchText(c).includes(term);
+      });
+      return `
+        ${pageHead("Criar Auditoria", "Admin e desenvolvedor podem auditar casos pendentes ou cadastrar uma auditoria avulsa.")}
+        <div class="card" style="margin-bottom:24px;border-color:color-mix(in srgb,var(--primary) 28%,var(--line));">
+          <div class="card-title">
+            <div>
+              <h2>Cadastrar auditoria avulsa</h2>
+              <p class="caption" style="margin:6px 0 0">Crie uma auditoria fora da fila automática, com ID preservado e vínculo ao usuário logado.</p>
+            </div>
+            <button class="btn btn-primary" onclick="startManualAudit('admin')">${icon("ph-plus-circle")} Nova auditoria avulsa</button>
+          </div>
+        </div>
+        <div class="card" style="margin-bottom:24px">
+          <div class="form-row">
+            <label>Pesquisar caso pendente</label>
+            <input value="${escapeHTML(state.filters.adminCaseSearch)}" oninput="state.filters.adminCaseSearch=this.value; renderActiveTab();" placeholder="Nome, ID, contrato, proposta/consulta, BPO ou tipo">
+          </div>
+        </div>
+        <div class="case-list">
+          ${pending.length ? pending.map(c => renderCaseCard(c, true)).join("") : emptyState("Nenhum caso pendente encontrado", "Todos os casos filtrados já foram concluídos ou ainda não foram importados.")}
+        </div>
+      `;
+    }
+
+    function renderAuditWorkspace() {
+      const audit = state.currentAudit;
+      return `
+        ${pageHead(audit.mode === "read" ? "Auditoria Concluída" : audit.mode === "edit" ? "Editar Auditoria" : "Nova Auditoria", `${escapeHTML(audit.caseData.idCaso)} · ${escapeHTML(caseSubject(audit.caseData))} · ${escapeHTML(labels[audit.caseData.tipoAuditoria] || audit.caseData.tipoAuditoria)}`)}
+        <div class="card">
+          ${renderStepper(audit.step)}
+          ${audit.step === 1 ? renderStep1() : audit.step === 2 ? renderStep2() : renderStep3()}
+        </div>
+      `;
+    }
+
+    function renderStepper(step) {
+      return `
+        <div class="stepper">
+          ${[["Formulário", 1], ["Checklist", 2], ["Resultado", 3]].map(([label, num]) => `
+            <div class="step ${step === num ? "active" : step > num ? "done" : ""}">
+              <span class="step-num">${step > num ? icon("ph-check") : num}</span>
+              <span>${label}</span>
+            </div>
+          `).join("")}
+        </div>
+      `;
+    }
+
+    function startAudit(caseId, context) {
+      const c = caseById(caseId);
+      if (!c) return showToast("Caso não encontrado.", "error");
+      const criteria = getCriteria(c.tipoAuditoria).map(crit => ({
+        criterioNome: crit.nome,
+        peso: crit.peso,
+        resposta: "",
+        observacaoIndividual: ""
+      }));
+      state.currentAudit = {
+        mode: "new",
+        context: context === "admin" ? "admin" : "auditor",
+        step: 1,
+        caseId: c.id,
+        auditorId: state.currentUser.id,
+        editingAuditId: null,
+        caseData: { ...c, cliente: c.cliente || (c.tipoAuditoria === "Escrita Mensageria" ? c.atendente : "") },
+        criteria,
+        openCriteria: {},
+        manualCreated: false,
+        manualSimplified: false,
+        manualScore: "",
+        observacaoGeral: "",
+        errors: {},
+        lastSavedAt: null
+      };
+      state.currentTab = context === "admin" ? "createAudit" : "newAudit";
+      renderApp();
+    }
+
+    function blankCaseData(type = "Telefonica Basica") {
+      return {
+        id: null,
+        auditorId: state.currentUser.id,
+        auditorNome: state.currentUser.nome,
+        atendente: "",
+        cliente: "",
+        bpo: "",
+        tipoAuditoria: type,
+        tipoLigacao: type === "Escrita Mensageria" ? "" : "Receptiva",
+        tempoLigacao: "",
+        propostaConsulta: "",
+        contrato: "",
+        idCaso: generateCaseCode(),
+        status: STATUS.PENDENTE,
+        criadoEm: todayISO(),
+        importadoEm: todayISO(),
+        assignedAt: todayISO(),
+        completedAt: null,
+        createdManually: true
+      };
+    }
+
+    function startManualAudit(context) {
+      const type = "Telefonica Basica";
+      state.currentAudit = {
+        mode: "new",
+        context: context === "admin" ? "admin" : "auditor",
+        step: 1,
+        caseId: null,
+        auditorId: state.currentUser.id,
+        editingAuditId: null,
+        caseData: blankCaseData(type),
+        criteria: getCriteria(type).map(crit => ({
+          criterioNome: crit.nome,
+          peso: crit.peso,
+          resposta: "",
+          observacaoIndividual: ""
+        })),
+        openCriteria: {},
+        manualCreated: true,
+        manualSimplified: false,
+        manualScore: "",
+        observacaoGeral: "",
+        errors: {},
+        lastSavedAt: null
+      };
+      state.currentTab = context === "admin" ? "createAudit" : "newAudit";
+      renderApp();
+    }
+
+    function updateAuditType(type) {
+      if (!state.currentAudit || !state.currentAudit.manualCreated) return;
+      const previous = state.currentAudit.caseData;
+      state.currentAudit.caseData = {
+        ...blankCaseData(type),
+        idCaso: previous.idCaso,
+        bpo: previous.bpo || "",
+        atendente: type === "Escrita Mensageria" ? "" : (previous.atendente || ""),
+        cliente: type === "Escrita Mensageria" ? (previous.cliente || previous.atendente || "") : "",
+        propostaConsulta: type === "Escrita Mensageria" ? (previous.propostaConsulta || "") : "",
+        contrato: type === "Escrita Mensageria" ? (previous.contrato || "") : "",
+        tipoLigacao: type === "Escrita Mensageria" ? "" : (previous.tipoLigacao || "Receptiva")
+      };
+      state.currentAudit.criteria = getCriteria(type).map(crit => ({
+        criterioNome: crit.nome,
+        peso: crit.peso,
+        resposta: "",
+        observacaoIndividual: ""
+      }));
+      state.currentAudit.manualSimplified = false;
+      state.currentAudit.manualScore = "";
+      state.currentAudit.errors = {};
+      renderActiveTab();
+    }
+
+    function openAuditReadByCase(caseId) {
+      const audit = auditForCase(caseId);
+      if (!audit) return showToast("Ainda não existe auditoria salva para este caso.", "warning");
+      openAudit(audit.id, "read");
+    }
+
+    function openAudit(auditId, mode = "read") {
+      const a = auditById(auditId);
+      if (!a) return showToast("Auditoria não encontrada.", "error");
+      const c = caseById(a.caseId);
+      state.currentAudit = {
+        mode,
+        context: hasManagerAccess() ? "admin" : "auditor",
+        step: 3,
+        caseId: c.id,
+        auditorId: a.auditorId,
+        editingAuditId: a.id,
+        caseData: { ...c },
+        criteria: a.criterios.map(item => ({ ...item })),
+        openCriteria: {},
+        manualSimplified: !!a.manualSimplified,
+        manualScore: a.manualSimplified ? String(a.notaFinal) : "",
+        observacaoGeral: a.observacaoGeral || "",
+        errors: {},
+        lastSavedAt: null
+      };
+      state.currentTab = hasManagerAccess() ? "createAudit" : "newAudit";
+      renderApp();
+    }
+
+    function editCurrentAudit() {
+      if (!state.currentAudit) return;
+      state.currentAudit.mode = "edit";
+      state.currentAudit.step = 2;
+      renderActiveTab();
+    }
+
+    function renderStep1() {
+      const audit = state.currentAudit;
+      const data = state.currentAudit.caseData;
+      const e = state.currentAudit.errors || {};
+      const isText = data.tipoAuditoria === "Escrita Mensageria";
+      return `
+        <div class="form-section">
+          ${auditTypeControl(data, audit.manualCreated, e.tipoAuditoria)}
+          ${auditInput("Auditor", "auditorNome", userById(audit.auditorId)?.nome || state.currentUser.nome, true, e.auditorNome)}
+          ${isText ? auditInput("Cliente", "cliente", data.cliente || data.atendente, false, e.cliente) : auditInput("Atendente", "atendente", data.atendente, false, e.atendente)}
+          ${auditInput("BPO", "bpo", data.bpo, false, e.bpo)}
+          ${isText ? auditInput("Proposta/Consulta", "propostaConsulta", data.propostaConsulta, false, e.propostaConsulta, "wide") : auditSelect("Tipo da ligação", "tipoLigacao", data.tipoLigacao, [["Ativa", "Ativa"], ["Receptiva", "Receptiva"]], e.tipoLigacao)}
+          ${isText ? auditInput("Contrato", "contrato", data.contrato, false, e.contrato) : ""}
+          ${auditInput("ID gerado", "idCaso", data.idCaso, true, e.idCaso)}
+        </div>
+        <div class="actions-row">
+          <button class="btn btn-ghost" onclick="cancelAudit()">${icon("ph-arrow-left")} Cancelar</button>
+          <button class="btn btn-primary" onclick="goChecklist()">${icon("ph-arrow-right")} Continuar</button>
+        </div>
+      `;
+    }
+
+    function auditTypeControl(data, editable, error) {
+      if (!editable) return auditInput("Tipo de auditoria", "tipoAuditoria", labels[data.tipoAuditoria] || data.tipoAuditoria, true, error);
+      return `
+        <div class="form-row ${error ? "invalid" : ""}">
+          <label>Tipo de auditoria</label>
+          <select onchange="updateAuditType(this.value)">
+            ${Object.keys(criteriaCatalog).map(type => `<option value="${type}" ${data.tipoAuditoria === type ? "selected" : ""}>${labels[type]}</option>`).join("")}
+          </select>
+          <div class="error-msg">${error || ""}</div>
+        </div>
+      `;
+    }
+
+    function auditSelect(label, key, value, options, error, extraClass = "") {
+      return `
+        <div class="form-row ${extraClass} ${error ? "invalid" : ""}">
+          <label>${label}</label>
+          <select onchange="updateAuditField('${key}', this.value)">
+            ${options.map(([optionValue, optionLabel]) => `<option value="${optionValue}" ${value === optionValue ? "selected" : ""}>${optionLabel}</option>`).join("")}
+          </select>
+          <div class="error-msg">${error || ""}</div>
+        </div>
+      `;
+    }
+
+    function auditInput(label, key, value, readonly, error, extraClass = "") {
+      const dataKey = readonly || key === "tipoAuditoria" || key === "auditorNome" ? "" : `oninput="updateAuditField('${key}', this.value)"`;
+      return `
+        <div class="form-row ${extraClass} ${error ? "invalid" : ""}">
+          <label>${label}</label>
+          <input value="${escapeHTML(value)}" ${readonly ? "readonly" : ""} ${dataKey}>
+          <div class="error-msg">${error || ""}</div>
+        </div>
+      `;
+    }
+
+    function updateAuditField(key, value) {
+      if (!state.currentAudit) return;
+      state.currentAudit.caseData[key] = value;
+      if (state.currentAudit.errors) state.currentAudit.errors[key] = "";
+    }
+
+    function validateStep1() {
+      const data = state.currentAudit.caseData;
+      const required = data.tipoAuditoria === "Escrita Mensageria"
+        ? ["cliente", "bpo", "tipoAuditoria", "idCaso", "propostaConsulta", "contrato"]
+        : ["atendente", "bpo", "tipoAuditoria", "tipoLigacao", "idCaso"];
+      const errors = {};
+      required.forEach(key => {
+        if (!String(state.currentAudit.caseData[key] || "").trim()) errors[key] = "Campo obrigatório.";
+      });
+      state.currentAudit.errors = errors;
+      return Object.keys(errors).length === 0;
+    }
+
+    function goChecklist() {
+      if (!validateStep1()) {
+        renderActiveTab();
+        showToast("Preencha os campos obrigatórios para continuar.", "warning");
+        return;
+      }
+      state.currentAudit.step = 2;
+      autosaveNow();
+      renderActiveTab();
+    }
+
+    function renderStep2() {
+      const audit = state.currentAudit;
+      if (audit.caseData.tipoAuditoria === "Escrita Mensageria") {
+        return `
+          <div class="check-toolbar">
+            <div>
+              <div class="caption">Modo de avaliação</div>
+              <div class="segmented" style="margin-top:8px">
+                <button class="${!audit.manualSimplified ? "active" : ""}" onclick="setManualMode(false)">Modo Completo</button>
+                <button class="${audit.manualSimplified ? "active" : ""}" onclick="setManualMode(true)">Modo Simplificado</button>
+              </div>
+            </div>
+            ${autosaveIndicator()}
+          </div>
+          ${audit.manualSimplified ? renderSimplifiedStep() : renderChecklistStep()}
+        `;
+      }
+      return `
+        <div class="check-toolbar">
+          ${renderChecklistProgress()}
+          <div style="display:flex; gap:10px; flex-wrap:wrap">
+            ${autosaveIndicator()}
+            <button class="btn btn-secondary" onclick="confirmMarkAll()">${icon("ph-checks")} Marcar todos como Atendeu</button>
+          </div>
+        </div>
+        ${renderChecklistStep(false)}
+      `;
+    }
+
+    function renderChecklistStep(showToolbar = true) {
+      const audit = state.currentAudit;
+      return `
+        ${showToolbar ? `
+          <div class="check-toolbar">
+            ${renderChecklistProgress()}
+            <div style="display:flex; gap:10px; flex-wrap:wrap">
+              ${autosaveIndicator()}
+              <button class="btn btn-secondary" onclick="confirmMarkAll()">${icon("ph-checks")} Marcar todos como Atendeu</button>
+            </div>
+          </div>
+        ` : ""}
+        <div class="criterion-list">
+          ${audit.criteria.map((item, index) => renderCriterion(item, index)).join("")}
+        </div>
+        <div class="actions-row">
+          <button class="btn btn-secondary" onclick="state.currentAudit.step=1; renderActiveTab();">${icon("ph-arrow-left")} Voltar</button>
+          <button class="btn btn-primary" onclick="goResult()">${icon("ph-chart-bar")} Ver Resultado</button>
+        </div>
+      `;
+    }
+
+    function renderSimplifiedStep() {
+      const audit = state.currentAudit;
+      const e = audit.errors || {};
+      return `
+        <div class="grid grid-2">
+          <div class="form-row ${e.manualScore ? "invalid" : ""}">
+            <label>Nota manual (0 a 100)</label>
+            <input type="number" min="0" max="100" value="${escapeHTML(audit.manualScore)}" oninput="updateManualScore(this.value)" placeholder="Ex.: 87">
+            <div class="error-msg">${e.manualScore || ""}</div>
+          </div>
+          <div class="summary-tile">
+            <span class="caption">Classificação prevista</span>
+            <strong style="margin-top:8px">${audit.manualScore !== "" ? classificationBadge(classify(Number(audit.manualScore))) : `<span class="badge neutral">Aguardando nota</span>`}</strong>
+          </div>
+        </div>
+        <div class="form-row ${e.observacaoGeral ? "invalid" : ""}" style="margin-top:18px">
+          <label>Observação geral obrigatória</label>
+          <textarea oninput="updateGeneralObs(this.value)" placeholder="Descreva a justificativa da nota manual.">${escapeHTML(audit.observacaoGeral)}</textarea>
+          <div class="error-msg">${e.observacaoGeral || ""}</div>
+        </div>
+        <div class="actions-row">
+          <button class="btn btn-secondary" onclick="state.currentAudit.step=1; renderActiveTab();">${icon("ph-arrow-left")} Voltar</button>
+          <button class="btn btn-primary" onclick="goResult()">${icon("ph-chart-bar")} Ver Resultado</button>
+        </div>
+      `;
+    }
+
+    function renderChecklistProgress() {
+      const filled = state.currentAudit.criteria.filter(item => item.resposta).length;
+      const total = state.currentAudit.criteria.length;
+      const pct = total ? (filled / total) * 100 : 0;
+      return `
+        <div class="progress-wrap">
+          <div class="progress-track"><div class="progress-fill" style="--w:${pct}%"></div></div>
+          <div class="progress-caption">
+            <span>${filled}/${total} preenchidos</span>
+            <span>${Math.round(pct)}%</span>
+          </div>
+        </div>
+      `;
+    }
+
+    function autosaveIndicator() {
+      const last = state.currentAudit?.lastSavedAt;
+      return `<span class="badge neutral">${icon("ph-floppy-disk")} ${last ? `Salvo às ${last}` : "Autosave ativo"}</span>`;
+    }
+
+    function renderCriterion(item, index) {
+      const open = !!state.currentAudit.openCriteria[index];
+      const active = item.resposta;
+      return `
+        <section id="criterion-${index}" class="criterion ${active ? "answered" : ""} ${open ? "open" : ""}">
+          <div class="criterion-head">
+            <button class="criterion-name" onclick="toggleCriterion(${index})" style="background:transparent;color:var(--text);text-align:left;padding:0">
+              <span class="badge info">${Number(item.peso).toFixed(item.peso % 1 ? 1 : 0)}%</span>
+              <strong>${escapeHTML(item.criterioNome)}</strong>
+              ${icon(open ? "ph-caret-up" : "ph-caret-down")}
+            </button>
+            <div class="criterion-actions">
+              ${answerButton(index, ANSWERS.OK, "ok", "Atendeu")}
+              ${answerButton(index, ANSWERS.PARTIAL, "partial", "Parcial")}
+              ${answerButton(index, ANSWERS.NO, "no", "Não atendeu")}
+            </div>
+          </div>
+          <div class="criterion-obs">
+            <div class="form-row">
+              <label>Observação individual</label>
+              <textarea oninput="updateCriterionObs(${index}, this.value)" placeholder="Adicione uma observação para este critério.">${escapeHTML(item.observacaoIndividual || "")}</textarea>
+            </div>
+          </div>
+        </section>
+      `;
+    }
+
+    function answerButton(index, value, cls, text) {
+      const active = state.currentAudit.criteria[index].resposta === value ? "active" : "";
+      return `<button class="answer-btn ${cls} ${active}" onclick="setAnswer(${index}, '${value}')">${text}</button>`;
+    }
+
+    function setAnswer(index, value) {
+      state.currentAudit.criteria[index].resposta = value;
+      state.currentAudit.openCriteria[index] = true;
+      autosaveNow(false);
+      renderActiveTab();
+      requestAnimationFrame(() => {
+        const el = document.getElementById(`criterion-${index}`);
+        if (el) {
+          el.classList.add("sealed");
+          setTimeout(() => el.classList.remove("sealed"), 230);
+        }
+      });
+    }
+
+    function updateCriterionObs(index, value) {
+      state.currentAudit.criteria[index].observacaoIndividual = value;
+    }
+
+    function toggleCriterion(index) {
+      state.currentAudit.openCriteria[index] = !state.currentAudit.openCriteria[index];
+      renderActiveTab();
+    }
+
+    function setManualMode(enabled) {
+      state.currentAudit.manualSimplified = enabled;
+      state.currentAudit.errors = {};
+      autosaveNow(false);
+      renderActiveTab();
+    }
+
+    function updateManualScore(value) {
+      state.currentAudit.manualScore = value;
+      if (state.currentAudit.errors) state.currentAudit.errors.manualScore = "";
+    }
+
+    function updateGeneralObs(value) {
+      state.currentAudit.observacaoGeral = value;
+      if (state.currentAudit.errors) state.currentAudit.errors.observacaoGeral = "";
+    }
+
+    function validateStep2() {
+      const audit = state.currentAudit;
+      const errors = {};
+      if (audit.manualSimplified) {
+        const score = Number(audit.manualScore);
+        if (audit.manualScore === "" || Number.isNaN(score) || score < 0 || score > 100) {
+          errors.manualScore = "Informe uma nota entre 0 e 100.";
+        }
+        if (!String(audit.observacaoGeral || "").trim()) {
+          errors.observacaoGeral = "A observação geral é obrigatória no modo simplificado.";
+        }
+      } else {
+        const missing = audit.criteria.filter(item => !item.resposta).length;
+        if (missing) errors.criteria = `${missing} critério(s) ainda sem resposta.`;
+      }
+      audit.errors = errors;
+      return Object.keys(errors).length === 0;
+    }
+
+    function goResult() {
+      if (!validateStep2()) {
+        renderActiveTab();
+        showToast(state.currentAudit.errors.criteria || "Revise os campos obrigatórios.", "warning");
+        return;
+      }
+      state.currentAudit.step = 3;
+      autosaveNow();
+      renderActiveTab();
+    }
+
+    function calculateCurrentAudit() {
+      const audit = state.currentAudit;
+      if (!audit) return null;
+      if (audit.manualSimplified) {
+        const score = Math.max(0, Math.min(100, Number(audit.manualScore || 0)));
+        return {
+          notaFinal: Math.round(score * 10) / 10,
+          classificacao: classify(score),
+          counts: { ok: 0, partial: 0, no: 0 },
+          criterios: []
+        };
+      }
+      const notaFinal = calculateScore(audit.criteria);
+      return {
+        notaFinal,
+        classificacao: classify(notaFinal),
+        counts: {
+          ok: audit.criteria.filter(c => c.resposta === ANSWERS.OK).length,
+          partial: audit.criteria.filter(c => c.resposta === ANSWERS.PARTIAL).length,
+          no: audit.criteria.filter(c => c.resposta === ANSWERS.NO).length
+        },
+        criterios: audit.criteria
+      };
+    }
+
+    function renderStep3() {
+      const audit = state.currentAudit;
+      const result = calculateCurrentAudit();
+      const c = audit.caseData;
+      const readOnly = audit.mode === "read";
+      return `
+        <div class="result-hero">
+          <div class="score-box">
+            <div>
+              <div class="caption">Conformidade</div>
+              <div class="score-value">${result.notaFinal.toFixed(1)}%</div>
+              ${classificationBadge(result.classificacao)}
+            </div>
+          </div>
+          <div class="card" style="box-shadow:none">
+            <div class="card-title">
+              <h2>Resumo da auditoria</h2>
+            </div>
+            <div class="summary-grid">
+              <div class="summary-tile"><strong>${result.counts.ok}</strong><span class="caption">Atendeu</span></div>
+              <div class="summary-tile"><strong>${result.counts.partial}</strong><span class="caption">Parcial</span></div>
+              <div class="summary-tile"><strong>${result.counts.no}</strong><span class="caption">Não atendeu</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="detail-grid" style="margin-bottom:24px">
+          ${detail("ID", c.idCaso)}
+          ${detail("Tipo", labels[c.tipoAuditoria] || c.tipoAuditoria)}
+          ${detail("BPO", c.bpo)}
+          ${c.tipoAuditoria === "Escrita Mensageria" ? detail("Cliente", caseSubject(c)) : detail("Atendente", caseSubject(c))}
+          ${c.tipoAuditoria === "Escrita Mensageria" ? detail("Proposta/Consulta", c.propostaConsulta) : detail("Tipo ligação", c.tipoLigacao)}
+          ${c.tipoAuditoria === "Escrita Mensageria" ? detail("Contrato", c.contrato) : detail("Auditor", userById(audit.auditorId)?.nome || "-")}
+        </div>
+
+        <div class="form-row">
+          <label>Observação geral</label>
+          <textarea ${readOnly ? "readonly" : ""} oninput="updateGeneralObs(this.value)" placeholder="Registre uma conclusão geral da auditoria.">${escapeHTML(audit.observacaoGeral || "")}</textarea>
+        </div>
+
+        <div class="actions-row">
+          ${readOnly ? `
+            <button class="btn btn-secondary" onclick="cancelAudit()">${icon("ph-arrow-left")} Voltar</button>
+            <button class="btn btn-secondary" onclick="exportCurrentAudit()">${icon("ph-download-simple")} Exportar esta auditoria</button>
+            <button class="btn btn-primary" onclick="editCurrentAudit()">${icon("ph-pencil-simple")} Editar auditoria</button>
+          ` : `
+            <button class="btn btn-secondary" onclick="state.currentAudit.step=2; renderActiveTab();">${icon("ph-arrow-left")} Voltar ao checklist</button>
+            <button class="btn btn-secondary" onclick="exportCurrentAudit()">${icon("ph-download-simple")} Exportar esta auditoria</button>
+            <button class="btn btn-primary" onclick="saveCurrentAudit()" ${state.saveLoading ? "disabled" : ""}>
+              ${state.saveLoading ? `<span class="spinner"></span> Salvando` : `${icon("ph-floppy-disk")} Salvar auditoria`}
+            </button>
+          `}
+        </div>
+      `;
+    }
+
+    function detail(label, value) {
+      return `<div class="detail-item"><span>${label}</span><strong>${escapeHTML(value)}</strong></div>`;
+    }
+
+    function classificationBadge(classificacao) {
+      return `<span class="badge ${classVariant(classificacao)}">${icon(classificacao === "Excelente" ? "ph-check-circle" : classificacao === "Regular" ? "ph-warning-circle" : "ph-x-circle")} ${classificacao}</span>`;
+    }
+
+    function confirmMarkAll() {
+      showModal({
+        title: `${icon("ph-checks")} Marcar todos como Atendeu`,
+        body: "Esta ação preencherá todos os critérios do checklist atual como Atendeu. Você ainda poderá revisar e alterar qualquer resposta antes de salvar.",
+        actions: `
+          <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+          <button class="btn btn-primary" onclick="markAllOk(); closeModal();">${icon("ph-check-circle")} Confirmar</button>
+        `
+      });
+    }
+
+    function markAllOk() {
+      state.currentAudit.criteria.forEach(item => item.resposta = ANSWERS.OK);
+      autosaveNow();
+      renderActiveTab();
+      showToast("Checklist preenchido como Atendeu.", "success");
+    }
+
+    function autosaveNow(show = true) {
+      if (!state.currentAudit) return;
+      const d = new Date();
+      state.currentAudit.lastSavedAt = d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+      if (show) showToast("Rascunho salvo automaticamente.", "info");
+    }
+
+    setInterval(() => {
+      if (state.currentUser && state.currentAudit && state.currentAudit.mode !== "read") {
+        autosaveNow(false);
+        if (state.currentTab === "newAudit" || state.currentTab === "createAudit") renderActiveTab();
+      }
+    }, 30000);
+
+    function saveCurrentAudit() {
+      if (!state.currentAudit || state.saveLoading) return;
+      const audit = state.currentAudit;
+      if (!validateStep2()) {
+        audit.step = 2;
+        renderActiveTab();
+        showToast("Revise a auditoria antes de salvar.", "warning");
+        return;
+      }
+      state.saveLoading = true;
+      renderActiveTab();
+      setTimeout(() => {
+        const result = calculateCurrentAudit();
+        let c = audit.caseId ? caseById(audit.caseId) : null;
+        if (!c) {
+          const newCase = {
+            ...audit.caseData,
+            id: nextId(state.cases),
+            auditorId: audit.auditorId,
+            status: STATUS.CONCLUIDO,
+            criadoEm: todayISO(),
+            importadoEm: todayISO(),
+            assignedAt: todayISO(),
+            completedAt: todayISO(),
+            createdManually: true
+          };
+          if (newCase.tipoAuditoria === "Escrita Mensageria") newCase.atendente = newCase.cliente;
+          state.cases.push(newCase);
+          c = newCase;
+          audit.caseId = c.id;
+        } else {
+          const normalized = { ...audit.caseData };
+          if (normalized.tipoAuditoria === "Escrita Mensageria") normalized.atendente = normalized.cliente || normalized.atendente;
+          Object.assign(c, normalized, { auditorId: c.auditorId || audit.auditorId, status: STATUS.CONCLUIDO, completedAt: todayISO() });
+        }
+        const payload = {
+          caseId: c.id,
+          auditorId: audit.auditorId,
+          criterios: audit.manualSimplified ? [] : audit.criteria.map(item => ({ ...item })),
+          notaFinal: result.notaFinal,
+          classificacao: result.classificacao,
+          observacaoGeral: audit.observacaoGeral || "",
+          concluidaEm: todayISO(),
+          manualSimplified: audit.manualSimplified
+        };
+        if (audit.editingAuditId) {
+          const existing = auditById(audit.editingAuditId);
+          Object.assign(existing, payload);
+        } else {
+          state.audits.push({ id: nextId(state.audits), ...payload });
+        }
+        state.saveLoading = false;
+        showModal({
+          title: `${icon("ph-check-circle")} Auditoria salva`,
+          body: `O caso ${escapeHTML(c.idCaso)} foi marcado como concluído e os indicadores foram atualizados.`,
+          actions: `<button class="btn btn-primary" onclick="closeModal()">${icon("ph-arrow-right")} Continuar</button>`,
+          onClose: () => {
+            state.currentAudit = null;
+            state.currentTab = hasManagerAccess() ? "myAudits" : "queue";
+            renderApp();
+          }
+        });
+      }, 1000);
+    }
+
+    function cancelAudit() {
+      state.currentAudit = null;
+      state.saveLoading = false;
+      state.currentTab = hasManagerAccess() ? "createAudit" : "queue";
+      renderApp();
+    }
+
+    function renderMyHistory() {
+      const audits = filterPersonalHistory(state.audits.filter(a => a.auditorId === state.currentUser.id));
+      return renderHistoryPage({
+        title: "Meu Histórico",
+        subtitle: "Auditorias concluídas pelo seu login.",
+        audits,
+        exportLabel: "Exportar Histórico",
+        exportAction: "exportHistory('mine')"
+      });
+    }
+
+    function renderMyAudits() {
+      const audits = filterPersonalHistory(state.audits.filter(a => a.auditorId === state.currentUser.id));
+      return renderHistoryPage({
+        title: "Minhas Auditorias",
+        subtitle: "Auditorias criadas manualmente pelo administrador logado.",
+        audits,
+        exportLabel: "Exportar Minhas Auditorias",
+        exportAction: "exportHistory('mine')"
+      });
+    }
+
+    function renderGlobalHistory() {
+      const audits = state.audits.filter(a => {
+        const c = caseById(a.caseId);
+        const byAuditor = state.filters.globalAuditor === "todos" || String(a.auditorId) === state.filters.globalAuditor;
+        const byBpo = state.filters.globalBpo === "todos" || c.bpo === state.filters.globalBpo;
+        const byType = state.filters.globalType === "todos" || c.tipoAuditoria === state.filters.globalType;
+        const byClass = state.filters.globalClass === "todos" || a.classificacao === state.filters.globalClass;
+        const bySearch = !state.filters.globalSearch || caseSearchText(c, a).includes(state.filters.globalSearch.toLowerCase());
+        const byAttendant = !state.filters.globalAttendant || caseSubject(c).toLowerCase().includes(state.filters.globalAttendant.toLowerCase());
+        const byDate = !state.filters.globalDate || a.concluidaEm === state.filters.globalDate;
+        return byAuditor && byBpo && byType && byClass && bySearch && byAttendant && byDate;
+      });
+      return renderHistoryPage({
+        title: "Histórico Global",
+        subtitle: "Todas as auditorias concluídas por todos os auditores.",
+        audits,
+        global: true,
+        exportLabel: "Exportar Histórico Global",
+        exportAction: "exportHistory('global')"
+      });
+    }
+
+    function renderHistoryPage({ title, subtitle, audits, global = false, exportLabel, exportAction }) {
+      return `
+        ${pageHead(title, subtitle, `<button class="btn btn-primary" onclick="${exportAction}">${icon("ph-download-simple")} ${exportLabel}</button>`)}
+        <div class="card" style="margin-bottom:24px">
+          ${global ? `
+            <div class="filters">
+              ${selectField("Auditor", "globalAuditor", [["todos", "Todos"], ...state.users.filter(u => u.perfil !== "").map(u => [String(u.id), u.nome])])}
+              ${selectField("BPO", "globalBpo", [["todos", "Todos"], ...uniqueOptions(state.cases.map(c => c.bpo))])}
+              ${selectField("Tipo", "globalType", [["todos", "Todos"], ...Object.keys(criteriaCatalog).map(t => [t, labels[t]])])}
+              ${selectField("Classificação", "globalClass", [["todos", "Todas"], ["Excelente", "Excelente"], ["Regular", "Regular"], ["Crítico", "Crítico"]])}
+              <div class="form-row"><label>Pesquisa geral</label><input value="${escapeHTML(state.filters.globalSearch)}" oninput="state.filters.globalSearch=this.value; renderActiveTab();" placeholder="Nome, ID, contrato, proposta"></div>
+              <div class="form-row"><label>Atendente</label><input value="${escapeHTML(state.filters.globalAttendant)}" oninput="state.filters.globalAttendant=this.value; renderActiveTab();" placeholder="Buscar atendente"></div>
+              <div class="form-row"><label>Data</label><input type="date" value="${escapeHTML(state.filters.globalDate)}" onchange="state.filters.globalDate=this.value; renderActiveTab();"></div>
+            </div>
+          ` : `
+            <div class="filters">
+              ${selectField("BPO", "historyBpo", [["todos", "Todos"], ...uniqueOptions(state.cases.map(c => c.bpo))])}
+              ${selectField("Classificação", "historyClass", [["todos", "Todas"], ["Excelente", "Excelente"], ["Regular", "Regular"], ["Crítico", "Crítico"]])}
+              <div class="form-row"><label>Pesquisa geral</label><input value="${escapeHTML(state.filters.historySearch)}" oninput="state.filters.historySearch=this.value; renderActiveTab();" placeholder="Nome, ID, contrato, proposta"></div>
+              <div class="form-row"><label>Atendente</label><input value="${escapeHTML(state.filters.historyAttendant)}" oninput="state.filters.historyAttendant=this.value; renderActiveTab();" placeholder="Buscar atendente"></div>
+              <div class="form-row"><label>Data</label><input type="date" value="${escapeHTML(state.filters.historyDate)}" onchange="state.filters.historyDate=this.value; renderActiveTab();"></div>
+            </div>
+          `}
+        </div>
+        <div class="card">
+          ${audits.length ? historyTable(audits, global) : emptyState("Nenhuma auditoria no histórico", "Quando auditorias forem salvas, elas aparecerão nesta lista com opções de edição e exportação.")}
+        </div>
+      `;
+    }
+
+    function filterPersonalHistory(audits) {
+      return audits.filter(a => {
+        const c = caseById(a.caseId);
+        const byBpo = state.filters.historyBpo === "todos" || c.bpo === state.filters.historyBpo;
+        const byClass = state.filters.historyClass === "todos" || a.classificacao === state.filters.historyClass;
+        const bySearch = !state.filters.historySearch || caseSearchText(c, a).includes(state.filters.historySearch.toLowerCase());
+        const byAttendant = !state.filters.historyAttendant || caseSubject(c).toLowerCase().includes(state.filters.historyAttendant.toLowerCase());
+        const byDate = !state.filters.historyDate || a.concluidaEm === state.filters.historyDate;
+        return byBpo && byClass && bySearch && byAttendant && byDate;
+      });
+    }
+
+    function historyTable(audits, global) {
+      return `
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>ID caso</th>
+                <th>Auditor</th>
+                <th>BPO</th>
+                <th>Atendente/Cliente</th>
+                <th>Tipo</th>
+                <th>Nota</th>
+                <th>Classificação</th>
+                <th>Data</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${audits.map(a => {
+                const c = caseById(a.caseId);
+                const u = userById(a.auditorId);
+                return `
+                  <tr>
+                    <td><strong>${escapeHTML(c.idCaso)}</strong></td>
+                    <td>${escapeHTML(u?.nome || "-")}</td>
+                    <td>${escapeHTML(c.bpo)}</td>
+                    <td>${escapeHTML(caseSubject(c))}</td>
+                    <td>${escapeHTML(labels[c.tipoAuditoria] || c.tipoAuditoria)}</td>
+                    <td><strong>${a.notaFinal.toFixed(1)}%</strong></td>
+                    <td>${classificationBadge(a.classificacao)}</td>
+                    <td>${fmtDate(a.concluidaEm)}</td>
+                    <td>
+                      <div style="display:flex; gap:8px; flex-wrap:wrap">
+                        <button class="btn btn-secondary" onclick="openAudit(${a.id}, 'read')">${icon("ph-eye")} Ver</button>
+                        <button class="btn btn-secondary" onclick="openAudit(${a.id}, 'edit')">${icon("ph-pencil-simple")} Editar</button>
+                        <button class="btn btn-secondary" onclick="exportAuditById(${a.id})">${icon("ph-download-simple")} Exportar</button>
+                      </div>
+                    </td>
+                  </tr>
+                `;
+              }).join("")}
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    function renderMyDashboard() {
+      const assigned = state.cases.filter(c => c.auditorId === state.currentUser.id);
+      const done = assigned.filter(c => c.status === STATUS.CONCLUIDO);
+      const pending = assigned.filter(c => c.status === STATUS.PENDENTE);
+      const overdue = pending.filter(c => slaInfo(c).overdue);
+      const urgent = [...pending].sort((a, b) => slaInfo(a).daysLeft - slaInfo(b).daysLeft)[0];
+      const audits = state.audits.filter(a => a.auditorId === state.currentUser.id);
+      return `
+        ${pageHead("Meu Dashboard", "Indicadores operacionais da sua carteira, com foco em SLA e volume de trabalho.")}
+        <div class="grid grid-4" style="margin-bottom:24px">
+          ${kpi("Casos atribuídos", assigned.length, "ph-tray", "Total em sua carteira")}
+          ${kpi("Concluídos", done.length, "ph-check-circle", "Casos finalizados")}
+          ${kpi("Faltam fazer", pending.length, "ph-hourglass-medium", "Casos pendentes")}
+          ${kpi("Atrasados SLA", overdue.length, "ph-warning-circle", "Fora do prazo de SLA")}
+        </div>
+        <div class="grid grid-2">
+          <div class="card">
+            <div class="card-title"><h2>Caso mais urgente</h2></div>
+            ${urgent ? renderUrgentCase(urgent) : emptyState("Sem pendências", "Não há caso pendente para vencimento de SLA.")}
+          </div>
+          <div class="card">
+            <div class="card-title"><h2>5 casos próximos do SLA</h2></div>
+            ${renderUrgencyList(pending)}
+          </div>
+          <div class="card">
+            <div class="card-title"><h2>Resumo da sua produção</h2></div>
+            <div class="grid grid-3" style="gap:12px">
+              <div class="summary-tile"><strong>${audits.length}</strong><span class="caption">Auditorias salvas</span></div>
+              <div class="summary-tile"><strong>${assigned.length ? Math.round((done.length / assigned.length) * 100) : 0}%</strong><span class="caption">Carteira concluída</span></div>
+              <div class="summary-tile"><strong>${pending.length ? Math.round(((pending.length - overdue.length) / pending.length) * 100) : 100}%</strong><span class="caption">Pendências no prazo</span></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title"><h2>Últimas auditorias</h2></div>
+            ${renderRecentAuditList(audits)}
+          </div>
+        </div>
+      `;
+    }
+
+    function renderRecentAuditList(audits) {
+      const latest = [...audits].sort((a, b) => b.concluidaEm.localeCompare(a.concluidaEm)).slice(0, 5);
+      if (!latest.length) return emptyState("Sem auditorias salvas", "Suas últimas auditorias aparecerão aqui.");
+      return `<div class="case-list">${latest.map(a => {
+        const c = caseById(a.caseId);
+        return `
+          <article class="case-card" onclick="openAudit(${a.id}, 'read')">
+            <div class="case-main">
+              <h3>${escapeHTML(c.idCaso)} · ${escapeHTML(caseSubject(c))}</h3>
+              <div class="case-meta">
+                ${classificationBadge(a.classificacao)}
+                <span class="badge neutral">${fmtDate(a.concluidaEm)}</span>
+                <span class="badge info">${a.notaFinal.toFixed(1)}%</span>
+              </div>
+            </div>
+          </article>
+        `;
+      }).join("")}</div>`;
+    }
+
+    function renderUrgentCase(c) {
+      const sla = slaInfo(c);
+      return `
+        <div class="score-box" style="place-items:start;text-align:left">
+          <span class="badge ${sla.variant}">${icon("ph-clock-countdown")} ${sla.label}</span>
+          <h2 style="margin:18px 0 8px;font-size:24px">${escapeHTML(c.idCaso)} · ${escapeHTML(caseSubject(c))}</h2>
+          <p class="muted" style="margin:0 0 16px">${escapeHTML(c.bpo)} · ${escapeHTML(labels[c.tipoAuditoria])}</p>
+          <div class="mini-progress" style="width:100%"><span style="--w:${sla.percent}%;--bar:${sla.color}"></span></div>
+        </div>
+      `;
+    }
+
+    function renderUrgencyList(pending) {
+      const top = [...pending].sort((a, b) => slaInfo(a).daysLeft - slaInfo(b).daysLeft).slice(0, 5);
+      if (!top.length) return emptyState("Nada vencendo", "Sua fila não possui casos pendentes no momento.");
+      return `<div class="bar-chart">${top.map(c => {
+        const sla = slaInfo(c);
+        return `
+          <div>
+            <div style="display:flex; justify-content:space-between; gap:10px; margin-bottom:7px">
+              <strong>${escapeHTML(c.idCaso)}</strong>
+              <span class="badge ${sla.variant}">${sla.label}</span>
+            </div>
+            <div class="mini-progress"><span style="--w:${sla.percent}%;--bar:${sla.color}"></span></div>
+            <div class="caption" style="margin-top:6px">${escapeHTML(caseSubject(c))} · ${escapeHTML(c.bpo)}</div>
+          </div>
+        `;
+      }).join("")}</div>`;
+    }
+
+    function renderAdminDashboard() {
+      const dashboardCases = state.cases.filter(dashboardCaseMatches);
+      const dashboardAudits = state.audits.filter(dashboardAuditMatches);
+      const total = dashboardCases.length;
+      const doneCases = dashboardCases.filter(c => c.status === STATUS.CONCLUIDO).length;
+      const pending = dashboardCases.filter(c => c.status === STATUS.PENDENTE);
+      const overdue = pending.filter(c => slaInfo(c).overdue).length;
+      const avg = avgAudit(dashboardAudits);
+      return `
+        ${pageHead("Dashboard Global", "Visão executiva de SLA, volume e qualidade por auditor, BPO e período.", `<button class="btn btn-primary" onclick="exportHistory('global')">${icon("ph-download-simple")} Exportar relatório geral</button>`)}
+        ${renderDashboardFilters()}
+        <div class="grid grid-4" style="margin-bottom:24px">
+          ${kpi("Total de casos", total, "ph-files", "Casos dentro dos filtros")}
+          ${kpi("Concluídos", doneCases, "ph-check-circle", "Auditorias finalizadas")}
+          ${kpi("Pendentes", pending.length, "ph-hourglass-medium", "Aguardando auditoria")}
+          ${kpi("Atrasados SLA", overdue, "ph-warning-circle", `Prazo padrão: ${state.config.slaDays} dias`)}
+        </div>
+        <div class="grid grid-3" style="margin-bottom:24px">
+          ${kpi("Média qualidade", `${avg.toFixed(1)}%`, "ph-chart-line-up", "Média geral das auditorias")}
+          ${kpi("Excelente", dashboardAudits.filter(a => a.classificacao === "Excelente").length, "ph-medal", "Classificação alta")}
+          ${kpi("Crítico", dashboardAudits.filter(a => a.classificacao === "Crítico").length, "ph-trend-down", "Necessitam atenção")}
+        </div>
+        ${renderBpoBriefing(dashboardCases, dashboardAudits)}
+        <div class="grid grid-2">
+          <div class="card">
+            <div class="card-title"><h2>Distribuição por classificação</h2></div>
+            ${renderDonut(dashboardAudits)}
+          </div>
+          <div class="card">
+            <div class="card-title"><h2>Média por tipo de auditoria</h2></div>
+            ${renderAverageByType(dashboardAudits)}
+          </div>
+          <div class="card">
+            <div class="card-title"><h2>Evolução da qualidade média</h2></div>
+            ${renderEvolutionChart(dashboardAudits)}
+          </div>
+          <div class="card">
+            <div class="card-title"><h2>SLA por auditor</h2></div>
+            ${renderSlaTable(dashboardCases)}
+          </div>
+          <div class="card">
+            <div class="card-title"><h2>Qualidade por BPO</h2></div>
+            ${renderQualityByBpo(dashboardAudits)}
+          </div>
+          <div class="card">
+            <div class="card-title"><h2>Ranking de qualidade por auditor</h2></div>
+            ${renderAuditorQualityRanking(dashboardAudits)}
+          </div>
+          <div class="card">
+            <div class="card-title"><h2>Ofensores por critério</h2></div>
+            ${renderOffendersChart(dashboardAudits)}
+          </div>
+        </div>
+      `;
+    }
+
+    function renderDashboardFilters() {
+      return `
+        <div class="card" style="margin-bottom:24px">
+          <div class="card-title">
+            <h2>Filtro para apresentação gerencial</h2>
+            <span class="badge info">${icon("ph-presentation-chart")} BPO + período</span>
+          </div>
+          <div class="filters">
+            ${selectField("BPO", "dashboardBpo", [["todos", "Todos"], ...uniqueOptions(state.cases.map(c => c.bpo))])}
+            ${selectField("Período", "dashboardPeriod", [["todos", "Todos"], ["semana", "Semana"], ["mes", "Mês"], ["trimestre", "Trimestre"], ["personalizado", "Personalizado"]])}
+            <div class="form-row">
+              <label>Data inicial</label>
+              <input type="date" value="${escapeHTML(state.filters.dashboardStart)}" onchange="state.filters.dashboardStart=this.value; renderActiveTab();" ${state.filters.dashboardPeriod === "personalizado" ? "" : "disabled"}>
+            </div>
+            <div class="form-row">
+              <label>Data final</label>
+              <input type="date" value="${escapeHTML(state.filters.dashboardEnd)}" onchange="state.filters.dashboardEnd=this.value; renderActiveTab();" ${state.filters.dashboardPeriod === "personalizado" ? "" : "disabled"}>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderBpoBriefing(cases, audits) {
+      const selectedBpo = state.filters.dashboardBpo === "todos" ? "Todas as BPOs" : state.filters.dashboardBpo;
+      const total = cases.length;
+      const done = cases.filter(c => c.status === STATUS.CONCLUIDO).length;
+      const pending = cases.filter(c => c.status === STATUS.PENDENTE);
+      const overdue = pending.filter(c => slaInfo(c).overdue).length;
+      const avg = avgAudit(audits);
+      const excellent = audits.filter(a => a.classificacao === "Excelente").length;
+      const critical = audits.filter(a => a.classificacao === "Crítico").length;
+      const slaCompliance = total ? Math.round(((total - overdue) / total) * 100) : 100;
+      const completion = total ? Math.round((done / total) * 100) : 0;
+      const topCriteria = failingCriteriaSummary(audits).slice(0, 4);
+      const positiveCriteria = positiveCriteriaSummary(audits).slice(0, 3);
+      return `
+        <section class="card executive-card" style="margin-bottom:24px;border-color:color-mix(in srgb,var(--primary) 24%,var(--line));">
+          <div class="card-title">
+            <div>
+              <h2>Análise executiva da operação</h2>
+              <p class="caption" style="margin:6px 0 0">${escapeHTML(selectedBpo)} · ${escapeHTML(periodLabel())}</p>
+            </div>
+            <span class="badge info">${icon("ph-chart-line-up")} Visão gerencial</span>
+          </div>
+          <div class="grid grid-4" style="gap:12px;margin-bottom:18px">
+            <div class="summary-tile"><strong>${avg.toFixed(1)}%</strong><span class="caption">Qualidade média</span></div>
+            <div class="summary-tile"><strong>${slaCompliance}%</strong><span class="caption">Cumprimento SLA</span></div>
+            <div class="summary-tile"><strong>${completion}%</strong><span class="caption">Carteira concluída</span></div>
+            <div class="summary-tile"><strong>${critical}</strong><span class="caption">Casos críticos</span></div>
+          </div>
+          <div class="grid grid-2">
+            <div>
+              <h3 style="font-size:16px;margin:0 0 12px">Leitura gerencial</h3>
+              <p class="muted" style="line-height:1.7;margin:0">
+                Foram analisadas ${audits.length} auditorias de ${total} casos no filtro atual. 
+                O volume concluído está em ${completion}% e o SLA tem ${slaCompliance}% de cumprimento. 
+                Há ${excellent} classificação(ões) Excelente e ${critical} ponto(s) Crítico(s) para priorizar no feedback.
+              </p>
+            </div>
+            <div>
+              <h3 style="font-size:16px;margin:0 0 12px">Distribuição de qualidade</h3>
+              ${renderClassificationBars(audits)}
+            </div>
+            <div>
+              <h3 style="font-size:16px;margin:0 0 12px">Pontos positivos</h3>
+              <ul class="insight-list">
+                ${positiveCriteria.length ? positiveCriteria.map(row => `<li>${icon("ph-check-circle")} <span>${escapeHTML(row.name)} aparece como ponto forte em ${row.rate.toFixed(0)}% das avaliações aplicáveis.</span></li>`).join("") : `<li>${icon("ph-info")} <span>Sem volume suficiente para destacar pontos positivos no filtro atual.</span></li>`}
+              </ul>
+            </div>
+            <div>
+              <h3 style="font-size:16px;margin:0 0 12px">Pontos a melhorar</h3>
+              <ul class="insight-list">
+                ${topCriteria.length ? topCriteria.slice(0, 3).map(row => `<li>${icon("ph-warning-circle")} <span>${escapeHTML(row.name)} concentrou ${row.count} ocorrência(s) de parcial ou não atendeu.</span></li>`).join("") : `<li>${icon("ph-check-circle")} <span>Não há ofensores relevantes no filtro atual.</span></li>`}
+              </ul>
+            </div>
+          </div>
+        </section>
+      `;
+    }
+
+    function periodLabel() {
+      const period = state.filters.dashboardPeriod;
+      if (period === "semana") return "Últimos 7 dias";
+      if (period === "mes") return "Últimos 30 dias";
+      if (period === "trimestre") return "Últimos 90 dias";
+      if (period === "personalizado") {
+        const start = state.filters.dashboardStart ? fmtDate(state.filters.dashboardStart) : "início";
+        const end = state.filters.dashboardEnd ? fmtDate(state.filters.dashboardEnd) : "hoje";
+        return `${start} a ${end}`;
+      }
+      return "Todo o período";
+    }
+
+    function failingCriteriaSummary(audits) {
+      const map = {};
+      audits.forEach(a => {
+        (a.criterios || []).forEach(item => {
+          if (item.resposta === ANSWERS.OK) return;
+          const key = item.criterioNome;
+          map[key] = map[key] || { name: key, count: 0, total: 0 };
+          map[key].count++;
+        });
+        (a.criterios || []).forEach(item => {
+          const key = item.criterioNome;
+          map[key] = map[key] || { name: key, count: 0, total: 0 };
+          map[key].total++;
+        });
+      });
+      return Object.values(map)
+        .filter(row => row.count > 0)
+        .map(row => ({ ...row, rate: row.total ? (row.count / row.total) * 100 : 0 }))
+        .sort((a, b) => b.count - a.count || b.rate - a.rate);
+    }
+
+    function positiveCriteriaSummary(audits) {
+      const map = {};
+      audits.forEach(a => {
+        (a.criterios || []).forEach(item => {
+          const key = item.criterioNome;
+          map[key] = map[key] || { name: key, ok: 0, total: 0 };
+          map[key].total++;
+          if (item.resposta === ANSWERS.OK) map[key].ok++;
+        });
+      });
+      return Object.values(map)
+        .filter(row => row.total > 0)
+        .map(row => ({ ...row, rate: (row.ok / row.total) * 100 }))
+        .filter(row => row.rate >= 70)
+        .sort((a, b) => b.rate - a.rate || b.ok - a.ok);
+    }
+
+    function renderClassificationBars(audits) {
+      const total = audits.length || 1;
+      const rows = [
+        ["Excelente", audits.filter(a => a.classificacao === "Excelente").length, "var(--success)"],
+        ["Regular", audits.filter(a => a.classificacao === "Regular").length, "var(--warning)"],
+        ["Crítico", audits.filter(a => a.classificacao === "Crítico").length, "var(--danger)"]
+      ];
+      return `<div class="bar-chart">${rows.map(([label, count, color]) => `
+        <div class="bar-row" style="grid-template-columns:120px 1fr 54px">
+          <strong>${label}</strong>
+          <div class="bar-track"><div class="bar-fill" style="--w:${(count / total) * 100}%;background:${color}"></div></div>
+          <span><strong>${count}</strong></span>
+        </div>
+      `).join("")}</div>`;
+    }
+
+    function renderOffendersChart(audits) {
+      const rows = failingCriteriaSummary(audits).slice(0, 8);
+      if (!rows.length) return emptyState("Sem ofensores no filtro", "Não há critérios com resposta parcial ou não atendeu para o filtro selecionado.");
+      const max = Math.max(...rows.map(row => row.count), 1);
+      return `<div class="bar-chart">${rows.map(row => `
+        <div class="bar-row" style="grid-template-columns:minmax(180px,1fr) 1fr 52px">
+          <strong>${escapeHTML(row.name)}</strong>
+          <div class="bar-track"><div class="bar-fill" style="--w:${(row.count / max) * 100}%;background:linear-gradient(90deg,var(--warning),var(--danger))"></div></div>
+          <span><strong>${row.count}</strong></span>
+        </div>
+      `).join("")}</div>`;
+    }
+
+    function dashboardCaseMatches(c) {
+      const byBpo = state.filters.dashboardBpo === "todos" || c.bpo === state.filters.dashboardBpo;
+      const byType = state.filters.dashboardType === "todos" || c.tipoAuditoria === state.filters.dashboardType;
+      const byAuditor = state.filters.dashboardAuditor === "todos" || String(c.auditorId) === state.filters.dashboardAuditor;
+      const byPeriod = matchesPeriod(c.importadoEm || c.assignedAt, state.filters.dashboardPeriod, state.filters.dashboardStart, state.filters.dashboardEnd);
+      return byBpo && byType && byAuditor && byPeriod;
+    }
+
+    function dashboardAuditMatches(a) {
+      const c = caseById(a.caseId);
+      const byCase = dashboardCaseMatches(c);
+      const byAuditor = state.filters.dashboardAuditor === "todos" || String(a.auditorId) === state.filters.dashboardAuditor;
+      const byPeriod = matchesPeriod(a.concluidaEm, state.filters.dashboardPeriod, state.filters.dashboardStart, state.filters.dashboardEnd);
+      return byCase && byAuditor && byPeriod;
+    }
+
+    function matchesPeriod(iso, period, start, end) {
+      if (!iso || period === "todos") return true;
+      if (period === "personalizado") {
+        const afterStart = !start || iso >= start;
+        const beforeEnd = !end || iso <= end;
+        return afterStart && beforeEnd;
+      }
+      const days = daysBetween(iso);
+      if (period === "semana") return days <= 7;
+      if (period === "mes") return days <= 30;
+      if (period === "trimestre") return days <= 90;
+      return true;
+    }
+
+    function saveSlaConfig() {
+      const value = Number(document.getElementById("slaConfigInput").value);
+      if (!value || value < 1) return showToast("Informe um SLA válido.", "warning");
+      state.config.slaDays = Math.round(value);
+      renderActiveTab();
+      showToast("Prazo padrão de SLA atualizado.", "success");
+    }
+
+    function avgAudit(audits) {
+      return audits.length ? audits.reduce((sum, a) => sum + a.notaFinal, 0) / audits.length : 0;
+    }
+
+    function renderAverageByType(sourceAudits = state.audits) {
+      const rows = Object.keys(criteriaCatalog).map(type => {
+        const audits = sourceAudits.filter(a => caseById(a.caseId).tipoAuditoria === type);
+        return { label: labels[type], avg: avgAudit(audits), total: audits.length };
+      });
+      return `<div class="bar-chart">${rows.map(row => `
+        <div class="bar-row">
+          <strong>${row.label}</strong>
+          <div class="bar-track"><div class="bar-fill" style="--w:${row.avg}%"></div></div>
+          <span><strong>${row.avg.toFixed(1)}%</strong></span>
+        </div>
+      `).join("")}</div>`;
+    }
+
+    function renderDonut(audits) {
+      const total = audits.length || 1;
+      const excelente = audits.filter(a => a.classificacao === "Excelente").length;
+      const regular = audits.filter(a => a.classificacao === "Regular").length;
+      const critico = audits.filter(a => a.classificacao === "Crítico").length;
+      return renderClassificationBars(audits) + `
+        <div class="grid grid-3" style="gap:12px;margin-top:18px">
+          <div class="summary-tile"><strong>${excelente}</strong><span class="caption">Excelente</span></div>
+          <div class="summary-tile"><strong>${regular}</strong><span class="caption">Regular</span></div>
+          <div class="summary-tile"><strong>${critico}</strong><span class="caption">Crítico</span></div>
+        </div>
+      `;
+    }
+
+    function legend(label, value, color) {
+      return `<div class="legend-item"><span class="legend-left"><span class="dot" style="--dot:${color}"></span>${label}</span><strong>${value}</strong></div>`;
+    }
+
+    function renderEvolutionChart(audits) {
+      const points = weeklyAverages(audits);
+      if (!points.length) return emptyState("Sem dados de evolução", "As auditorias concluídas formarão a linha de tendência.");
+      const w = 640, h = 210, pad = 34;
+      const coords = points.map((p, i) => {
+        const x = pad + (i * ((w - pad * 2) / Math.max(1, points.length - 1)));
+        const y = h - pad - ((p.avg / 100) * (h - pad * 2));
+        return `${x},${y}`;
+      }).join(" ");
+      return `
+        <svg class="timeline-chart" viewBox="0 0 ${w} ${h}" role="img" aria-label="Evolução semanal">
+          <g stroke="var(--line)" stroke-width="1">
+            <line x1="${pad}" y1="${h-pad}" x2="${w-pad}" y2="${h-pad}"></line>
+            <line x1="${pad}" y1="${pad}" x2="${pad}" y2="${h-pad}"></line>
+          </g>
+          <polyline fill="none" stroke="var(--primary)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" points="${coords}"></polyline>
+          ${points.map((p, i) => {
+            const [x, y] = coords.split(" ")[i].split(",");
+            return `<circle cx="${x}" cy="${y}" r="5" fill="var(--cyan)"><title>${p.label}: ${p.avg.toFixed(1)}%</title></circle>`;
+          }).join("")}
+          ${points.map((p, i) => {
+            const x = pad + (i * ((w - pad * 2) / Math.max(1, points.length - 1)));
+            return `<text x="${x}" y="${h-10}" text-anchor="middle" fill="var(--muted)" font-size="12" font-weight="700">${p.label}</text>`;
+          }).join("")}
+        </svg>
+      `;
+    }
+
+    function weeklyAverages(audits) {
+      const grouped = {};
+      audits.forEach(a => {
+        const d = new Date(`${a.concluidaEm}T12:00:00`);
+        const week = Math.ceil(d.getDate() / 7);
+        const key = `S${week}`;
+        grouped[key] = grouped[key] || [];
+        grouped[key].push(a.notaFinal);
+      });
+      return Object.entries(grouped).sort().map(([label, values]) => ({
+        label,
+        avg: values.reduce((s, v) => s + v, 0) / values.length
+      }));
+    }
+
+    function renderSlaTable(sourceCases = state.cases) {
+      const auditors = state.users.filter(u => u.perfil === "auditor");
+      return `
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Auditor</th><th>Total</th><th>Concluídos</th><th>Pendentes</th><th>Atraso</th><th>Cumprimento</th></tr></thead>
+            <tbody>
+              ${auditors.map(u => {
+                const assigned = sourceCases.filter(c => c.auditorId === u.id);
+                const done = assigned.filter(c => c.status === STATUS.CONCLUIDO);
+                const pending = assigned.filter(c => c.status === STATUS.PENDENTE);
+                const late = pending.filter(c => slaInfo(c).overdue);
+                const compliance = assigned.length ? ((assigned.length - late.length) / assigned.length) * 100 : 100;
+                return `<tr>
+                  <td><strong>${escapeHTML(u.nome)}</strong></td>
+                  <td>${assigned.length}</td>
+                  <td>${done.length}</td>
+                  <td>${pending.length}</td>
+                  <td>${late.length}</td>
+                  <td><span class="badge ${compliance >= 90 ? "success" : compliance >= 75 ? "warning" : "danger"}">${compliance.toFixed(0)}%</span></td>
+                </tr>`;
+              }).join("")}
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    function renderQualityByBpo(sourceAudits = state.audits) {
+      const bpos = uniqueOptions(sourceAudits.map(a => caseById(a.caseId).bpo)).map(([v]) => v);
+      if (!bpos.length) return emptyState("Sem auditorias no filtro", "A qualidade por BPO aparecerá quando houver auditorias concluídas dentro dos filtros.");
+      return `
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>BPO</th><th>Total</th><th>Média</th><th>Excelente</th><th>Regular</th><th>Crítico</th></tr></thead>
+            <tbody>
+              ${bpos.map(bpo => {
+                const audits = sourceAudits.filter(a => caseById(a.caseId).bpo === bpo);
+                return `<tr>
+                  <td><strong>${escapeHTML(bpo)}</strong></td>
+                  <td>${audits.length}</td>
+                  <td>${avgAudit(audits).toFixed(1)}%</td>
+                  <td>${audits.filter(a => a.classificacao === "Excelente").length}</td>
+                  <td>${audits.filter(a => a.classificacao === "Regular").length}</td>
+                  <td>${audits.filter(a => a.classificacao === "Crítico").length}</td>
+                </tr>`;
+              }).join("")}
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    function renderAuditorQualityRanking(sourceAudits = state.audits) {
+      const rows = state.users
+        .filter(u => u.perfil !== "")
+        .map(u => {
+          const audits = sourceAudits.filter(a => a.auditorId === u.id);
+          return { user: u, total: audits.length, avg: avgAudit(audits) };
+        })
+        .filter(row => row.total > 0)
+        .sort((a, b) => b.avg - a.avg);
+      if (!rows.length) return emptyState("Sem ranking no filtro", "Auditorias concluídas formarão o ranking de qualidade.");
+      return `
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Auditor</th><th>Total</th><th>Média</th></tr></thead>
+            <tbody>
+              ${rows.map((row, index) => `
+                <tr>
+                  <td><strong>${index + 1}. ${escapeHTML(row.user.nome)}</strong></td>
+                  <td>${row.total}</td>
+                  <td><span class="badge ${row.avg >= 90 ? "success" : row.avg >= 70 ? "warning" : "danger"}">${row.avg.toFixed(1)}%</span></td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    function renderUsers() {
+      return `
+        ${pageHead("Usuários", "Crie, edite e desative auditores. Ao adicionar auditor ativo, casos pendentes são redistribuídos com equilíbrio.")}
+        <div class="grid">
+          <div class="card">
+            <div class="card-title"><h2>Novo auditor</h2></div>
+            <form class="form-grid" onsubmit="createUser(event)">
+              <div class="form-row"><label>Nome</label><input id="newUserName" required placeholder="Nome do auditor"></div>
+              <div class="form-row"><label>Login</label><input id="newUserLogin" required placeholder="login.sem.espacos"></div>
+              <div class="form-row"><label>Senha</label><input id="newUserPass" required type="password" placeholder="Senha inicial"></div>
+              <button class="btn btn-primary" type="submit">${icon("ph-plus")} Criar auditor</button>
+            </form>
+          </div>
+        </div>
+        <div class="card" style="margin-top:24px">
+          <div class="card-title"><h2>Usuários cadastrados</h2></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Nome</th><th>Login</th><th>Perfil</th><th>Status</th><th>Criado em</th><th>Ações</th></tr></thead>
+              <tbody>
+                ${state.users.map(u => `
+                  <tr>
+                    <td><strong>${escapeHTML(u.nome)}</strong></td>
+                    <td>${escapeHTML(u.login)}</td>
+                    <td>${profileLabel(u.perfil)}</td>
+                    <td><span class="badge ${u.ativo ? "success" : "danger"}">${u.ativo ? "Ativo" : "Inativo"}</span></td>
+                    <td>${fmtDate(u.criadoEm)}</td>
+                    <td>
+                      <div style="display:flex; gap:8px; flex-wrap:wrap">
+                        <button class="btn btn-secondary" onclick="promptEditUser(${u.id})">${icon("ph-pencil-simple")} Editar</button>
+                        ${u.id !== state.currentUser.id ? `<button class="btn btn-danger" onclick="toggleUserActive(${u.id})">${icon(u.ativo ? "ph-user-minus" : "ph-user-plus")} ${u.ativo ? "Desativar" : "Ativar"}</button>` : ""}
+                      </div>
+                    </td>
+                  </tr>
+                `).join("")}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+    }
+
+    function createUser(event) {
+      event.preventDefault();
+      const nome = document.getElementById("newUserName").value.trim();
+      const login = document.getElementById("newUserLogin").value.trim();
+      const senha = document.getElementById("newUserPass").value;
+      if (!nome || !login || !senha) return showToast("Preencha todos os campos do novo auditor.", "warning");
+      if (state.users.some(u => u.login === login)) return showToast("Já existe usuário com este login.", "error");
+      state.users.push({ id: nextId(state.users), nome, login, senha, perfil: "auditor", ativo: true, criadoEm: todayISO() });
+      redistributePendingCases();
+      renderActiveTab();
+      showToast("Auditor criado e casos pendentes redistribuídos.", "success");
+    }
+
+    function promptEditUser(id) {
+      const u = userById(id);
+      showModal({
+        title: `${icon("ph-pencil-simple")} Editar usuário`,
+        body: `
+          <div class="form-grid">
+            <div class="form-row"><label>Nome</label><input id="editUserName" value="${escapeHTML(u.nome)}"></div>
+            <div class="form-row"><label>Login</label><input id="editUserLogin" value="${escapeHTML(u.login)}"></div>
+            <div class="form-row"><label>Nova senha (opcional)</label><input id="editUserPass" type="password" placeholder="Manter senha atual"></div>
+          </div>
+        `,
+        actions: `
+          <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+          <button class="btn btn-primary" onclick="saveUserEdit(${id})">${icon("ph-floppy-disk")} Salvar</button>
+        `
+      });
+    }
+
+    function saveUserEdit(id) {
+      const u = userById(id);
+      const nome = document.getElementById("editUserName").value.trim();
+      const login = document.getElementById("editUserLogin").value.trim();
+      const senha = document.getElementById("editUserPass").value;
+      if (!nome || !login) return showToast("Nome e login são obrigatórios.", "warning");
+      if (state.users.some(other => other.id !== id && other.login === login)) return showToast("Login já está em uso.", "error");
+      u.nome = nome;
+      u.login = login;
+      if (senha) u.senha = senha;
+      closeModal();
+      renderActiveTab();
+      showToast("Usuário atualizado.", "success");
+    }
+
+    function toggleUserActive(id) {
+      const u = userById(id);
+      u.ativo = !u.ativo;
+      redistributePendingCases();
+      renderActiveTab();
+      showToast(u.ativo ? "Usuário ativado e fila redistribuída." : "Usuário desativado e pendências redistribuídas.", "success");
+    }
+
+    function redistributePendingCases() {
+      const auditors = activeAuditors();
+      if (!auditors.length) return;
+      const pending = state.cases.filter(c => c.status === STATUS.PENDENTE);
+      const counts = Object.fromEntries(auditors.map(a => [a.id, 0]));
+      const affinity = {};
+      auditors.forEach(a => {
+        affinity[a.id] = {};
+        state.cases.filter(c => c.auditorId === a.id && c.status === STATUS.CONCLUIDO).forEach(c => {
+          affinity[a.id][c.bpo] = (affinity[a.id][c.bpo] || 0) + 1;
+        });
+      });
+      pending.sort((a, b) => a.bpo.localeCompare(b.bpo) || a.id - b.id).forEach(c => {
+        const min = Math.min(...Object.values(counts));
+        const candidates = auditors.filter(a => counts[a.id] === min);
+        candidates.sort((a, b) => (affinity[b.id][c.bpo] || 0) - (affinity[a.id][c.bpo] || 0) || a.id - b.id);
+        const selected = candidates[0];
+        const changed = c.auditorId !== selected.id;
+        c.auditorId = selected.id;
+        if (changed) c.assignedAt = todayISO();
+        counts[selected.id]++;
+        affinity[selected.id][c.bpo] = (affinity[selected.id][c.bpo] || 0) + 1;
+      });
+    }
+
+    function renderImportCases() {
+      return `
+        ${pageHead("Importar Casos", "Envie uma planilha .xlsx, revise os registros e confirme a distribuição automática entre auditores ativos.")}
+        <div class="grid grid-2">
+          <div class="card" style="border-color:color-mix(in srgb,var(--warning) 32%,var(--line));background:color-mix(in srgb,var(--warning-soft) 28%,var(--surface));">
+            <div class="card-title"><h2>Arquivo Excel</h2></div>
+            <div class="form-grid">
+              <div class="form-row">
+                <label>Selecionar planilha de casos (.xlsx)</label>
+                <input type="file" accept=".xlsx" onchange="handleImportFile(event)">
+                <div class="caption">Colunas esperadas: atendente, bpo, tipo_auditoria, tipo_ligacao, tempo_ligacao, proposta_consulta, contrato.</div>
+              </div>
+              <button class="btn btn-secondary" onclick="loadSampleImport()">${icon("ph-file-plus")} Usar exemplo de teste</button>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title">
+              <h2>Configuração dos casos</h2>
+              <span class="badge info">${icon("ph-clock-countdown")} SLA</span>
+            </div>
+            <div class="form-row">
+              <label>Prazo padrão de SLA em dias</label>
+              <input id="slaConfigInput" type="number" min="1" max="90" value="${state.config.slaDays}">
+              <div class="caption">Esse prazo é aplicado aos casos pendentes e recalcula os indicadores de vencimento.</div>
+            </div>
+            <div class="actions-row"><button class="btn btn-primary" onclick="saveSlaConfig()">${icon("ph-floppy-disk")} Salvar prazo de SLA</button></div>
+          </div>
+          <div class="card">
+            <div class="card-title"><h2>Resumo da prévia</h2></div>
+            <div class="grid grid-3" style="gap:12px">
+              <div class="summary-tile"><strong>${state.importPreview.length}</strong><span class="caption">Casos válidos</span></div>
+              <div class="summary-tile"><strong>${activeAuditors().length}</strong><span class="caption">Auditores ativos</span></div>
+              <div class="summary-tile"><strong>${state.importPreview.filter(r => !criteriaCatalog[r.tipoAuditoria]).length}</strong><span class="caption">Com erro</span></div>
+            </div>
+            <div class="actions-row">
+              <button class="btn btn-primary" onclick="confirmImport()" ${state.importPreview.length ? "" : "disabled"}>${icon("ph-check-circle")} Importar e distribuir casos</button>
+            </div>
+          </div>
+        </div>
+        <div class="card" style="margin-top:24px">
+          <div class="card-title"><h2>Prévia dos casos</h2></div>
+          ${state.importPreview.length ? importPreviewTable() : emptyState("Nenhum arquivo carregado", "Selecione uma planilha Excel ou use o exemplo de teste para visualizar como a importação funciona.")}
+        </div>
+      `;
+    }
+
+    function loadSampleImport() {
+      state.importPreview = [
+        { atendente: "Sofia Almeida", bpo: "BPO Norte", tipoAuditoria: "Telefonica Basica", tipoLigacao: "Receptiva", tempoLigacao: "05:18", propostaConsulta: "Atualização cadastral", contrato: "CTR-2001" },
+        { atendente: "Bruno Torres", bpo: "BPO Sul", tipoAuditoria: "Escrita Mensageria", tipoLigacao: "Chat", tempoLigacao: "13:44", propostaConsulta: "Dúvida de fatura", contrato: "CTR-2002" },
+        { atendente: "Camila Rocha", bpo: "BPO Leste", tipoAuditoria: "Telefonica Tecnica", tipoLigacao: "Ativa", tempoLigacao: "07:03", propostaConsulta: "Configuração técnica", contrato: "CTR-2003" }
+      ];
+      renderActiveTab();
+      showToast("Exemplo de teste carregado para prévia.", "success");
+    }
+
+    function handleImportFile(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const xlsx = window.XLSX || (typeof XLSX !== "undefined" ? XLSX : null);
+      if (!xlsx) return showToast("SheetJS não carregou. Verifique a conexão e tente novamente.", "error");
+      const reader = new FileReader();
+      reader.onload = e => {
+        try {
+          const wb = xlsx.read(new Uint8Array(e.target.result), { type: "array" });
+          const first = wb.Sheets[wb.SheetNames[0]];
+          const rows = xlsx.utils.sheet_to_json(first, { defval: "" });
+          state.importPreview = rows.map(r => ({
+            atendente: r.atendente,
+            bpo: r.bpo,
+            tipoAuditoria: r.tipo_auditoria,
+            tipoLigacao: r.tipo_ligacao,
+            tempoLigacao: r.tempo_ligacao,
+            propostaConsulta: r.proposta_consulta,
+            contrato: r.contrato
+          })).filter(r => r.atendente || r.bpo || r.tipoAuditoria);
+          renderActiveTab();
+          showToast("Arquivo lido com sucesso.", "success");
+        } catch (err) {
+          showToast("Não foi possível ler o arquivo Excel.", "error");
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    function importPreviewTable() {
+      return `
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Atendente</th><th>BPO</th><th>Tipo</th><th>Ligação</th><th>Tempo</th><th>Contrato</th><th>Status</th></tr></thead>
+            <tbody>
+              ${state.importPreview.map(r => {
+                const ok = !!criteriaCatalog[r.tipoAuditoria];
+                return `<tr>
+                  <td>${escapeHTML(r.atendente)}</td>
+                  <td>${escapeHTML(r.bpo)}</td>
+                  <td>${escapeHTML(r.tipoAuditoria)}</td>
+                  <td>${escapeHTML(r.tipoLigacao)}</td>
+                  <td>${escapeHTML(r.tempoLigacao)}</td>
+                  <td>${escapeHTML(r.contrato)}</td>
+                  <td><span class="badge ${ok ? "success" : "danger"}">${ok ? "Válido" : "Tipo inválido"}</span></td>
+                </tr>`;
+              }).join("")}
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    function confirmImport() {
+      const valid = state.importPreview.filter(r => criteriaCatalog[r.tipoAuditoria]);
+      if (!valid.length) return showToast("Nenhum caso válido para importar.", "warning");
+      valid.forEach(r => {
+        const id = nextId(state.cases);
+        state.cases.push({
+          id,
+          auditorId: null,
+          atendente: r.atendente,
+          bpo: r.bpo,
+          tipoAuditoria: r.tipoAuditoria,
+          tipoLigacao: r.tipoLigacao,
+          tempoLigacao: r.tempoLigacao,
+          propostaConsulta: r.propostaConsulta,
+          contrato: r.contrato,
+          idCaso: `AUD-${String(2026000 + id).slice(-6)}`,
+          status: STATUS.PENDENTE,
+          criadoEm: todayISO(),
+          importadoEm: todayISO(),
+          assignedAt: todayISO(),
+          completedAt: null
+        });
+      });
+      redistributePendingCases();
+      const count = valid.length;
+      state.importPreview = [];
+      renderActiveTab();
+      showToast(`${count} caso(s) importado(s) e distribuído(s).`, "success");
+    }
+
+    function renderHelp() {
+      const faqs = [
+        ["Como funciona a distribuição de casos?", "Na importação, os casos pendentes são distribuídos entre auditores ativos com equilíbrio numérico. Ao adicionar um auditor, apenas pendentes são redistribuídos; concluídos permanecem intocados."],
+        ["O que é SLA e como é calculado?", `SLA é o prazo para concluir cada caso. Este protótipo usa ${state.config.slaDays} dias, contados a partir da data de atribuição individual de cada caso.`],
+        ["Como calcular a nota de uma auditoria?", "Cada critério contribui com seu peso. Atendeu soma 100% do peso, Atendeu parcialmente soma 50% e Não atendeu soma 0%."],
+        ["O que significam Excelente, Regular e Crítico?", "Excelente é nota maior ou igual a 90%. Regular vai de 70% a 89%. Crítico fica abaixo de 70%."],
+        ["Como exportar meu histórico em Excel?", "Use o botão Exportar Histórico no painel de histórico. O arquivo terá uma aba de resumo e outra com detalhes por critério."],
+        ["Como usar o Modo Simplificado para Mensageria?", "Em auditorias de Escrita / Mensageria, no passo de checklist, alterne para Modo Simplificado e informe nota manual de 0 a 100 com observação geral obrigatória."],
+        ["Como trocar o tema claro/escuro?", "Use o botão de sol ou lua no topo. A interface alterna por variáveis de tema, sem perder contraste."],
+        ["O que acontece se eu não concluir um caso dentro do SLA?", "O caso passa a aparecer em atraso, em vermelho, e entra nos KPIs de pendências fora do prazo."]
+      ];
+      return `
+        ${pageHead("Ajuda", "Perguntas rápidas sobre operação, SLA, nota, exportação e tema.")}
+        <div class="accordion">
+          ${faqs.map((faq, index) => `
+            <div class="faq-item ${state.faqOpen[index] ? "open" : ""}">
+              <button class="faq-q" onclick="toggleFaq(${index})">
+                <span>${escapeHTML(faq[0])}</span>
+                ${icon(state.faqOpen[index] ? "ph-caret-up" : "ph-caret-down")}
+              </button>
+              <div class="faq-a">${escapeHTML(faq[1])}</div>
+            </div>
+          `).join("")}
+        </div>
+        <div class="card" style="margin-top:24px">
+          <div class="card-title"><h2>Precisa de mais ajuda?</h2></div>
+          <p class="muted" style="margin:0">Fale com o suporte interno pelo e-mail <strong>suporte.auditbpo@empresa.local</strong>.</p>
+        </div>
+      `;
+    }
+
+    function toggleFaq(index) {
+      state.faqOpen[index] = !state.faqOpen[index];
+      renderActiveTab();
+    }
+
+    function emptyState(title, message) {
+      return `
+        <div class="empty-state">
+          <svg viewBox="0 0 160 110" fill="none" aria-hidden="true">
+            <rect x="22" y="24" width="116" height="72" rx="16" fill="currentColor" opacity="0.12"/>
+            <rect x="42" y="38" width="76" height="8" rx="4" fill="currentColor" opacity="0.45"/>
+            <rect x="42" y="56" width="56" height="8" rx="4" fill="currentColor" opacity="0.30"/>
+            <rect x="42" y="74" width="66" height="8" rx="4" fill="currentColor" opacity="0.22"/>
+            <path d="M121 20l12 12M133 20l-12 12" stroke="currentColor" stroke-width="5" stroke-linecap="round" opacity="0.6"/>
+          </svg>
+          <h3>${title}</h3>
+          <p>${message}</p>
+        </div>
+      `;
+    }
+
+    function exportCurrentAudit() {
+      if (!state.currentAudit) return;
+      const result = calculateCurrentAudit();
+      const tempAudit = {
+        id: state.currentAudit.editingAuditId || 0,
+        caseId: state.currentAudit.caseId,
+        caseData: { ...state.currentAudit.caseData },
+        auditorId: state.currentAudit.auditorId,
+        criterios: state.currentAudit.manualSimplified ? [] : state.currentAudit.criteria,
+        notaFinal: result.notaFinal,
+        classificacao: result.classificacao,
+        observacaoGeral: state.currentAudit.observacaoGeral || "",
+        concluidaEm: todayISO(),
+        manualSimplified: state.currentAudit.manualSimplified
+      };
+      exportAudits([tempAudit], `auditoria_${state.currentAudit.caseData.idCaso}_${todayISO()}.xlsx`);
+    }
+
+    function exportAuditById(id) {
+      const audit = auditById(id);
+      if (audit) exportAudits([audit], `auditoria_${caseById(audit.caseId).idCaso}_${todayISO()}.xlsx`);
+    }
+
+    function exportHistory(scope) {
+      const audits = scope === "mine" ? state.audits.filter(a => a.auditorId === state.currentUser.id) : state.audits;
+      if (!audits.length) return showToast("Não há auditorias para exportar.", "warning");
+      exportAudits(audits, `historico_auditoria_${todayISO()}.xlsx`);
+    }
+
+    function exportAudits(audits, filename) {
+      try {
+        const xlsx = window.XLSX || (typeof XLSX !== "undefined" ? XLSX : null);
+        const allCriteriaNames = [...new Set(audits.flatMap(a => (a.criterios || []).map(item => item.criterioNome)))];
+        const resumo = audits.map(a => {
+          const c = auditCaseData(a);
+          const u = userById(a.auditorId);
+          const sla = slaInfo(c);
+          const row = {
+            "ID caso": c.idCaso,
+            "Auditor": u?.nome || "-",
+            "Login auditor": u?.login || "-",
+            "Perfil auditor": profileLabel(u?.perfil || "auditor"),
+            "BPO": c.bpo,
+            "Atendente": c.atendente || "",
+            "Cliente": c.cliente || "",
+            "Tipo": labels[c.tipoAuditoria] || c.tipoAuditoria,
+            "Tipo ligação": c.tipoLigacao || "",
+            "Proposta/Consulta": c.propostaConsulta || "",
+            "Contrato": c.contrato || "",
+            "Status caso": c.status || "",
+            "Criado manualmente": c.createdManually ? "Sim" : "Não",
+            "Data atribuição": fmtDate(c.assignedAt),
+            "SLA": sla.label,
+            "Nota": a.notaFinal,
+            "Classificação": a.classificacao,
+            "Observação geral": a.observacaoGeral || "",
+            "Modo simplificado": a.manualSimplified ? "Sim" : "Não",
+            "Data conclusão": fmtDate(a.concluidaEm)
+          };
+          allCriteriaNames.forEach((name, index) => {
+            const detail = (a.criterios || []).find(item => item.criterioNome === name);
+            const prefix = `Critério ${String(index + 1).padStart(2, "0")}`;
+            row[`${prefix} - nome`] = name;
+            row[`${prefix} - peso`] = detail?.peso ?? "";
+            row[`${prefix} - resposta`] = detail?.resposta || (a.manualSimplified ? "Modo Simplificado" : "");
+            row[`${prefix} - observação`] = detail?.observacaoIndividual || "";
+          });
+          return row;
+        });
+        const detalhes = audits.flatMap(a => {
+          const c = auditCaseData(a);
+          const u = userById(a.auditorId);
+          if (a.manualSimplified) {
+            return [{
+              "ID caso": c.idCaso,
+              "Auditor": u?.nome || "-",
+              "BPO": c.bpo,
+              "Atendente/Cliente": caseSubject(c),
+              "Tipo": labels[c.tipoAuditoria] || c.tipoAuditoria,
+              "Critério": "Modo Simplificado",
+              "Peso": 100,
+              "Resposta": `Nota manual ${a.notaFinal}`,
+              "Observação individual": a.observacaoGeral || "",
+              "Classificação": a.classificacao,
+              "Data": fmtDate(a.concluidaEm)
+            }];
+          }
+          return a.criterios.map(item => ({
+            "ID caso": c.idCaso,
+            "Auditor": u?.nome || "-",
+            "BPO": c.bpo,
+            "Atendente/Cliente": caseSubject(c),
+            "Tipo": labels[c.tipoAuditoria] || c.tipoAuditoria,
+            "Critério": item.criterioNome,
+            "Peso": item.peso,
+            "Resposta": item.resposta,
+            "Observação individual": item.observacaoIndividual || "",
+            "Classificação": a.classificacao,
+            "Data": fmtDate(a.concluidaEm)
+          }));
+        });
+        const controle = audits.map(a => {
+          const c = auditCaseData(a);
+          const criterios = a.criterios || [];
+          return {
+            "ID caso": c.idCaso,
+            "BPO": c.bpo,
+            "Atendente/Cliente": caseSubject(c),
+            "Atendeu": criterios.filter(item => item.resposta === ANSWERS.OK).length,
+            "Parcial": criterios.filter(item => item.resposta === ANSWERS.PARTIAL).length,
+            "Não atendeu": criterios.filter(item => item.resposta === ANSWERS.NO).length,
+            "Total critérios": criterios.length || (a.manualSimplified ? "Manual" : 0),
+            "Nota": a.notaFinal,
+            "Classificação": a.classificacao,
+            "Observação geral": a.observacaoGeral || ""
+          };
+        });
+        if (!xlsx) {
+          downloadHtmlExcel({ Resumo: resumo, Criterios: detalhes, Controle: controle }, filename.replace(/\.xlsx$/i, ".xls"));
+          showToast("Arquivo Excel gerado em modo compatibilidade.", "success");
+          return;
+        }
+        const wb = xlsx.utils.book_new();
+        const wsResumo = xlsx.utils.json_to_sheet(resumo);
+        const wsDetalhes = xlsx.utils.json_to_sheet(detalhes);
+        const wsControle = xlsx.utils.json_to_sheet(controle);
+        styleSheet(wsResumo, xlsx);
+        styleSheet(wsDetalhes, xlsx);
+        styleSheet(wsControle, xlsx);
+        xlsx.utils.book_append_sheet(wb, wsResumo, "Resumo");
+        xlsx.utils.book_append_sheet(wb, wsDetalhes, "Critérios");
+        xlsx.utils.book_append_sheet(wb, wsControle, "Controle");
+        xlsx.writeFile(wb, filename);
+        showToast("Arquivo Excel gerado.", "success");
+      } catch (err) {
+        showToast("Não foi possível exportar o Excel.", "error");
+      }
+    }
+
+    function auditCaseData(a) {
+      return caseById(a.caseId) || a.caseData || {};
+    }
+
+    function downloadHtmlExcel(sheets, filename) {
+      const html = `
+        <html><head><meta charset="utf-8"></head><body>
+          ${Object.entries(sheets).map(([name, rows]) => `
+            <h2>${escapeHTML(name)}</h2>
+            ${htmlTable(rows)}
+          `).join("<br>")}
+        </body></html>
+      `;
+      const blob = new Blob([html], { type: "application/vnd.ms-excel;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function htmlTable(rows) {
+      if (!rows.length) return "<p>Sem dados</p>";
+      const headers = Object.keys(rows[0]);
+      return `
+        <table border="1" cellspacing="0" cellpadding="4">
+          <thead><tr>${headers.map(h => `<th>${escapeHTML(h)}</th>`).join("")}</tr></thead>
+          <tbody>
+            ${rows.map(row => `<tr>${headers.map(h => `<td>${escapeHTML(row[h] ?? "")}</td>`).join("")}</tr>`).join("")}
+          </tbody>
+        </table>
+      `;
+    }
+
+    function styleSheet(ws, xlsxLib = window.XLSX || (typeof XLSX !== "undefined" ? XLSX : null)) {
+      if (!ws["!ref"]) return;
+      if (!xlsxLib) return;
+      const range = xlsxLib.utils.decode_range(ws["!ref"]);
+      for (let c = range.s.c; c <= range.e.c; c++) {
+        const cell = ws[xlsxLib.utils.encode_cell({ r: 0, c })];
+        if (cell) cell.s = { font: { bold: true }, fill: { fgColor: { rgb: "DBEAFE" } } };
+      }
+      ws["!cols"] = Array.from({ length: range.e.c + 1 }, () => ({ wch: 22 }));
+    }
+
+    function showToast(message, type = "info") {
+      const host = document.getElementById("toastHost");
+      const id = `toast-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+      const iconName = type === "success" ? "ph-check-circle" : type === "error" ? "ph-x-circle" : type === "warning" ? "ph-warning-circle" : "ph-info";
+      host.insertAdjacentHTML("beforeend", `<div id="${id}" class="toast ${type}">${icon(iconName)} <div>${escapeHTML(message)}</div></div>`);
+      setTimeout(() => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.classList.add("out");
+        setTimeout(() => el.remove(), 230);
+      }, 3200);
+    }
+
+    function showModal({ title, body, actions, onClose = null }) {
+      state.modalOnClose = onClose;
+      const host = document.getElementById("modalHost");
+      host.innerHTML = `
+        <div class="modal-backdrop" onclick="if(event.target.classList.contains('modal-backdrop')) closeModal();">
+          <div class="modal-card" role="dialog" aria-modal="true">
+            <h2 class="modal-title">${title}</h2>
+            <div class="modal-body">${body}</div>
+            <div class="modal-actions">${actions}</div>
+          </div>
+        </div>
+      `;
+      requestAnimationFrame(() => host.querySelector(".modal-backdrop")?.classList.add("show"));
+    }
+
+    function closeModal() {
+      const host = document.getElementById("modalHost");
+      const backdrop = host.querySelector(".modal-backdrop");
+      if (backdrop) backdrop.classList.remove("show");
+      setTimeout(() => {
+        host.innerHTML = "";
+        const cb = state.modalOnClose;
+        state.modalOnClose = null;
+        if (typeof cb === "function") cb();
+      }, 190);
+    }
+
+    initMockData();
+  </script>
+</body>
+</html>
