@@ -68,6 +68,8 @@ The following screenshots illustrate the **Mon Cher Chat** interface, showcasing
   <img src="assets/demo_chat.jpg" alt="Mon Cher Chat Chatbot Demonstration #1: Initial Interface" width="750"/>
 </p>
 
+** comentário aqui **
+
 <p align="center">
   <img src="assets/demo_chat2.jpg" alt="Mon Cher Chat Chatbot Demonstration #2: Conversation in progress" width="750"/>
 </p>
