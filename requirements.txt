@@ -1,12 +1,9 @@
-streamlit
-langchain-ollama
-
 <!doctype html>
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Gestão de Auditoria - Protótipo</title>
+  <title>Gestão de Auditoria</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -1617,6 +1614,42 @@ langchain-ollama
           <div class="error-msg" id="loginError"></div>
         </div>
       </form>
+      <form id="setupForm" class="login-card hidden" novalidate>
+        <div class="mobile-logo">
+          <span class="brand-logo">
+            <svg viewBox="0 0 48 48" fill="none" aria-hidden="true">
+              <path d="M12 13.5C12 10.46 14.46 8 17.5 8h13C33.54 8 36 10.46 36 13.5v21C36 37.54 33.54 40 30.5 40h-13C14.46 40 12 37.54 12 34.5v-21Z" stroke="currentColor" stroke-width="3"/>
+              <path d="M18 19h12M18 25h12M18 31h7" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+            </svg>
+          </span>
+          Gestão de Auditoria
+        </div>
+        <span class="badge warning" style="margin-bottom:14px"><i class="ph ph-database"></i> Primeira configuração</span>
+        <h2>Configurar primeiro admin</h2>
+        <p class="intro">Crie o primeiro usuário administrativo desta sessão. No ambiente real, esta etapa será validada pelo serviço remoto com SQLite.</p>
+        <div class="form-grid">
+          <div class="form-row" id="setupNameRow">
+            <label for="setupName">Nome do admin</label>
+            <input id="setupName" autocomplete="name" placeholder="Seu nome">
+            <div class="error-msg" id="setupNameError"></div>
+          </div>
+          <div class="form-row" id="setupLoginRow">
+            <label for="setupLogin">Login</label>
+            <input id="setupLogin" autocomplete="username" placeholder="Crie um login administrativo">
+            <div class="error-msg" id="setupLoginError"></div>
+          </div>
+          <div class="form-row" id="setupPassRow">
+            <label for="setupPass">Senha</label>
+            <input id="setupPass" type="password" autocomplete="new-password" placeholder="Crie uma senha">
+            <div class="error-msg" id="setupPassError"></div>
+          </div>
+          <button id="setupButton" class="btn btn-primary" type="submit">
+            <i class="ph ph-user-plus"></i>
+            Criar primeiro admin
+          </button>
+          <p class="caption">Nada é salvo no navegador. Sem serviço remoto, essa configuração é temporária e será perdida ao atualizar a página.</p>
+        </div>
+      </form>
       <div class="login-footer">© 2025 Gestão de Auditoria — Uso interno</div>
     </main>
   </section>
@@ -1649,19 +1682,51 @@ langchain-ollama
   </section>
 
   <script>
+    /* =========================================================
+       CONFIGURAÇÕES GERAIS
+       ========================================================= */
+    const APP_VERSION = "v1.0.0";
     const DAY = 24 * 60 * 60 * 1000;
-    const STATUS = { PENDENTE: "pendente", CONCLUIDO: "concluido" };
+    const REMOTE_SERVICE_ENABLED = false;
+
+    /* =========================================================
+       CONSTANTES E ENUMS
+       ========================================================= */
+    const STATUS = {
+      PENDENTE: "pendente",
+      EM_AUDITORIA: "em_auditoria",
+      CONCLUIDO: "concluido",
+      BLOQUEADO: "bloqueado",
+      ERRO_SYNC: "erro_sincronizacao"
+    };
     const ANSWERS = {
       OK: "Atendeu",
       PARTIAL: "Atendeu parcialmente",
       NO: "Nao atendeu"
     };
+    const IMPORT_BASE_COLUMNS = ["tipo_auditoria", "bpo"];
+    const IMPORT_TYPE_REQUIREMENTS = {
+      "Telefonica Basica": ["atendente", "tipo_ligacao"],
+      "Telefonica Tecnica": ["atendente", "tipo_ligacao"],
+      "Escrita Mensageria": ["cliente", "proposta_consulta", "contrato"]
+    };
+    const IMPORT_REQUIRED_COLUMNS = [...new Set([...IMPORT_BASE_COLUMNS, ...Object.values(IMPORT_TYPE_REQUIREMENTS).flat()])];
+    const IMPORT_OPTIONAL_COLUMNS = ["auditor_login", "protocolo", "id_externo", "tempo_ligacao"];
 
+    /* =========================================================
+       ESTADO DA APLICAÇÃO
+       State é reflexo temporário da tela; a fonte oficial futura
+       deve ser o serviço remoto conectado ao SQLite.
+       ========================================================= */
     const state = {
       currentUser: null,
       currentTab: null,
       theme: "light",
       config: { slaDays: 15 },
+      setupMode: true,
+      connectionStatus: REMOTE_SERVICE_ENABLED ? "conectado" : "aguardando_banco",
+      connectionMessage: "Aguardando conexão com o serviço remoto/SQLite. Dados desta sessão são temporários.",
+      saveStatus: "aguardando banco de dados",
       users: [],
       cases: [],
       audits: [],
@@ -1693,6 +1758,7 @@ langchain-ollama
         adminCaseSearch: ""
       },
       importPreview: [],
+      importSummary: null,
       faqOpen: {},
       saveLoading: false,
       loginLoading: false,
@@ -1786,91 +1852,234 @@ langchain-ollama
       return list.length ? Math.max(...list.map(item => item.id)) + 1 : 1;
     }
 
-    function initMockData() {
-      state.users = [
-        { id: 1, nome: "Admin Qualidade", login: "admin", senha: "admin", perfil: "admin", ativo: true, criadoEm: dateOffset(-90) },
-        { id: 2, nome: "Marina Lopes", login: "auditor1", senha: "auditor1", perfil: "auditor", ativo: true, criadoEm: dateOffset(-80) },
-        { id: 3, nome: "Rafael Nunes", login: "auditor2", senha: "auditor2", perfil: "auditor", ativo: true, criadoEm: dateOffset(-76) },
-        { id: 4, nome: "Admin Operações", login: "admin2", senha: "admin2", perfil: "admin", ativo: true, criadoEm: dateOffset(-70) },
-        { id: 5, nome: "Desenvolvedor", login: "dev", senha: "dev", perfil: "desenvolvedor", ativo: true, criadoEm: dateOffset(-65) }
-      ];
-
-      state.cases = [
-        mockCase(1, 2, -12, STATUS.PENDENTE, "Ana Beatriz", "BPO Norte", "Telefonica Basica", "Receptiva", "06:42", "Consulta de boleto", "CTR-1009"),
-        mockCase(2, 2, -3, STATUS.PENDENTE, "Carlos Lima", "BPO Sul", "Telefonica Tecnica", "Ativa", "09:11", "Suporte técnico", "CTR-1012"),
-        mockCase(3, 3, -16, STATUS.PENDENTE, "Rita Campos", "BPO Norte", "Telefonica Basica", "Receptiva", "04:38", "Renegociação", "CTR-1015"),
-        mockCase(4, 3, -10, STATUS.PENDENTE, "João Pedro", "BPO Leste", "Escrita Mensageria", "Chat", "12:05", "Contestação", "CTR-1018"),
-        mockCase(5, 2, -20, STATUS.CONCLUIDO, "Bianca Vieira", "BPO Sul", "Telefonica Basica", "Receptiva", "08:21", "Segunda via", "CTR-1021", dateOffset(-6)),
-        mockCase(6, 3, -9, STATUS.CONCLUIDO, "Lucas Ramos", "BPO Leste", "Escrita Mensageria", "WhatsApp", "15:28", "Cancelamento", "CTR-1024", dateOffset(-2)),
-        mockCase(7, null, -1, STATUS.PENDENTE, "Patrícia Melo", "BPO Oeste", "Telefonica Tecnica", "Receptiva", "07:47", "Instabilidade", "CTR-1029"),
-        mockCase(8, 2, -14, STATUS.PENDENTE, "Felipe Dias", "BPO Norte", "Escrita Mensageria", "Chat", "10:31", "Alteração cadastral", "CTR-1032"),
-        mockCase(9, 3, -5, STATUS.PENDENTE, "Helena Martins", "BPO Sul", "Telefonica Tecnica", "Ativa", "05:12", "Confirmação de dados", "CTR-1035"),
-        mockCase(10, 2, -18, STATUS.CONCLUIDO, "Nicolas Alves", "BPO Norte", "Telefonica Tecnica", "Receptiva", "11:09", "Falha no acesso", "CTR-1038", dateOffset(-8)),
-        mockCase(11, 3, -22, STATUS.CONCLUIDO, "Laura Costa", "BPO Oeste", "Telefonica Basica", "Ativa", "03:59", "Retenção", "CTR-1041", dateOffset(-12))
-      ];
-
-      state.audits = [];
-      createMockAudit(5, 2, [
-        ANSWERS.OK, ANSWERS.OK, ANSWERS.OK, ANSWERS.OK, ANSWERS.OK, ANSWERS.OK, ANSWERS.OK,
-        ANSWERS.OK, ANSWERS.OK, ANSWERS.PARTIAL, ANSWERS.OK, ANSWERS.OK, ANSWERS.PARTIAL
-      ], "Atendimento seguro, com pequenos pontos de reforço no fechamento.", dateOffset(-6));
-      createMockAudit(6, 3, [
-        ANSWERS.OK, ANSWERS.PARTIAL, ANSWERS.PARTIAL, ANSWERS.NO, ANSWERS.OK
-      ], "Texto objetivo, mas o script não foi seguido integralmente.", dateOffset(-2));
-      createMockAudit(10, 2, [
-        ANSWERS.OK, ANSWERS.OK, ANSWERS.PARTIAL, ANSWERS.OK, ANSWERS.PARTIAL, ANSWERS.OK, ANSWERS.OK,
-        ANSWERS.PARTIAL, ANSWERS.OK, ANSWERS.OK, ANSWERS.OK, ANSWERS.PARTIAL, ANSWERS.PARTIAL
-      ], "Bom domínio técnico; atenção à agilidade na busca de informações.", dateOffset(-8));
-      createMockAudit(11, 3, [
-        ANSWERS.OK, ANSWERS.OK, ANSWERS.OK, ANSWERS.OK, ANSWERS.NO, ANSWERS.PARTIAL, ANSWERS.OK,
-        ANSWERS.OK, ANSWERS.OK, ANSWERS.OK, ANSWERS.OK, ANSWERS.PARTIAL, ANSWERS.OK
-      ], "Auditoria revisada com pontos críticos em informação correta.", dateOffset(-12));
+    /* =========================================================
+       SERVICOS / ADAPTERS DE DADOS
+       Troque a implementacao interna por chamadas HTTP ao servico
+       remoto que gravara no SQLite. O HTML nao deve acessar SQLite
+       diretamente pela rede.
+       ========================================================= */
+    function weakSessionHash(value) {
+      let hash = 0;
+      const input = String(value || "");
+      for (let i = 0; i < input.length; i++) {
+        hash = ((hash << 5) - hash) + input.charCodeAt(i);
+        hash |= 0;
+      }
+      return `session:${Math.abs(hash)}`;
     }
 
-    function mockCase(id, auditorId, assignedOffset, status, atendente, bpo, tipoAuditoria, tipoLigacao, tempoLigacao, propostaConsulta, contrato, completedAt = null) {
-      return {
-        id,
-        auditorId,
-        atendente,
-        cliente: tipoAuditoria === "Escrita Mensageria" ? atendente : "",
-        bpo,
-        tipoAuditoria,
-        tipoLigacao,
-        tempoLigacao,
-        propostaConsulta,
-        contrato,
-        idCaso: `AUD-${String(2026000 + id).slice(-6)}`,
-        status,
-        criadoEm: dateOffset(assignedOffset - 1),
-        importadoEm: dateOffset(assignedOffset - 1),
-        assignedAt: dateOffset(assignedOffset),
-        completedAt,
-        createdManually: false
-      };
-    }
+    const DataService = {
+      remoteConnected: REMOTE_SERVICE_ENABLED,
+      store: {
+        users: [],
+        cases: [],
+        audits: [],
+        drafts: []
+      },
+      status() {
+        return {
+          connected: this.remoteConnected,
+          label: this.remoteConnected ? "Conectado ao servico" : "Aguardando banco de dados",
+          detail: this.remoteConnected
+            ? "Dados oficiais sincronizados com o servico remoto."
+            : "Modo interface local: dados temporarios apenas nesta sessao. Conecte o servico remoto para persistencia oficial."
+        };
+      },
+      hasUsers() {
+        return this.store.users.length > 0;
+      },
+      snapshot() {
+        return {
+          users: this.store.users.map(({ credentialHash, ...safe }) => ({ ...safe })),
+          cases: this.store.cases.map(item => ({ ...item })),
+          audits: this.store.audits.map(item => ({ ...item, criterios: (item.criterios || []).map(c => ({ ...c })) }))
+        };
+      },
+      fetchUsers() {
+        return this.snapshot().users;
+      },
+      fetchCases() {
+        return this.snapshot().cases;
+      },
+      fetchHistory() {
+        return this.snapshot().audits;
+      },
+      loadDashboard() {
+        return this.snapshot();
+      },
+      createInitialAdmin({ nome, login, senha }) {
+        if (this.hasUsers()) throw new Error("A configuracao inicial ja foi realizada.");
+        const user = {
+          id: 1,
+          nome,
+          login,
+          credentialHash: weakSessionHash(senha),
+          perfil: "admin",
+          ativo: true,
+          statusUsuario: "ativo",
+          criadoEm: todayISO()
+        };
+        this.store.users.push(user);
+        return { ...user, credentialHash: undefined };
+      },
+      login(login, senha) {
+        const user = this.store.users.find(u => u.login === login && u.credentialHash === weakSessionHash(senha) && u.ativo);
+        if (!user) return null;
+        const { credentialHash, ...safeUser } = user;
+        return { ...safeUser };
+      },
+      createUser({ nome, login, senha, perfil = "auditor" }) {
+        if (this.store.users.some(u => u.login === login)) throw new Error("Ja existe usuario com este login.");
+        const user = {
+          id: nextId(this.store.users),
+          nome,
+          login,
+          credentialHash: weakSessionHash(senha),
+          perfil,
+          ativo: true,
+          statusUsuario: "ativo",
+          criadoEm: todayISO()
+        };
+        this.store.users.push(user);
+        return { ...user, credentialHash: undefined };
+      },
+      updateUser(id, changes) {
+        const user = this.store.users.find(u => u.id === id);
+        if (!user) throw new Error("Usuario nao encontrado.");
+        if (changes.login && this.store.users.some(u => u.id !== id && u.login === changes.login)) throw new Error("Login ja esta em uso.");
+        user.nome = changes.nome ?? user.nome;
+        user.login = changes.login ?? user.login;
+        if (changes.senha) user.credentialHash = weakSessionHash(changes.senha);
+        if (changes.perfil) user.perfil = changes.perfil;
+        return { ...user, credentialHash: undefined };
+      },
+      setUserActive(id, ativo) {
+        const user = this.store.users.find(u => u.id === id);
+        if (!user) throw new Error("Usuario nao encontrado.");
+        user.ativo = ativo;
+        user.statusUsuario = ativo ? "ativo" : "inativo";
+      },
+      importCases(rows) {
+        rows.forEach(row => {
+          const id = nextId(this.store.cases);
+          this.store.cases.push({
+            id,
+            auditorId: row.auditorId ?? null,
+            lockedBy: null,
+            lockedAt: null,
+            atendente: row.atendente || row.cliente || "",
+            cliente: row.cliente || "",
+            bpo: row.bpo,
+            tipoAuditoria: row.tipoAuditoria,
+            tipoLigacao: row.tipoLigacao || "",
+            tempoLigacao: row.tempoLigacao || "",
+            propostaConsulta: row.propostaConsulta || "",
+            contrato: row.contrato || "",
+            protocolo: row.protocolo || "",
+            idExterno: row.idExterno || "",
+            idCaso: `AUD-${String(2026000 + id).slice(-6)}`,
+            status: STATUS.PENDENTE,
+            criadoEm: todayISO(),
+            importadoEm: todayISO(),
+            assignedAt: todayISO(),
+            completedAt: null,
+            createdManually: false,
+            officialSaved: this.remoteConnected
+          });
+        });
+        this.redistributePendingCases();
+      },
+      redistributePendingCases() {
+        const auditors = this.store.users.filter(u => u.perfil === "auditor" && u.ativo);
+        if (!auditors.length) return;
+        const counts = Object.fromEntries(auditors.map(a => [a.id, 0]));
+        this.store.cases
+          .filter(c => c.status === STATUS.PENDENTE)
+          .sort((a, b) => a.bpo.localeCompare(b.bpo) || a.id - b.id)
+          .forEach(c => {
+            const min = Math.min(...Object.values(counts));
+            const selected = auditors.find(a => counts[a.id] === min) || auditors[0];
+            c.auditorId = selected.id;
+            c.assignedAt = c.assignedAt || todayISO();
+            counts[selected.id]++;
+          });
+      },
+      lockCase(caseId, userId) {
+        const c = this.store.cases.find(item => item.id === caseId);
+        if (!c) throw new Error("Caso nao encontrado.");
+        if (c.status === STATUS.CONCLUIDO) throw new Error("Este caso ja foi concluido.");
+        if (c.lockedBy && c.lockedBy !== userId) throw new Error("Este caso esta em auditoria por outro usuario.");
+        c.status = STATUS.EM_AUDITORIA;
+        c.lockedBy = userId;
+        c.lockedAt = new Date().toISOString();
+        if (!c.auditorId) c.auditorId = userId;
+        return { ...c };
+      },
+      releaseCase(caseId, userId) {
+        const c = this.store.cases.find(item => item.id === caseId);
+        if (!c) return;
+        if (c.lockedBy && c.lockedBy !== userId) return;
+        if (c.status === STATUS.EM_AUDITORIA) c.status = STATUS.PENDENTE;
+        c.lockedBy = null;
+        c.lockedAt = null;
+      },
+      saveDraft(draft) {
+        const draftKey = draft.draftKey || draft.caseId;
+        const index = this.store.drafts.findIndex(d => d.draftKey === draftKey && d.auditorId === draft.auditorId);
+        const payload = { ...draft, draftKey, savedAt: new Date().toISOString(), officialSaved: this.remoteConnected };
+        if (index >= 0) this.store.drafts[index] = payload;
+        else this.store.drafts.push(payload);
+        return payload;
+      },
+      concludeAudit(auditPayload, caseData) {
+        let c = caseData.id ? this.store.cases.find(item => item.id === caseData.id) : null;
+        if (!c) {
+          const id = nextId(this.store.cases);
+          c = {
+            ...caseData,
+            id,
+            idCaso: caseData.idCaso || `AUD-${String(2026000 + id).slice(-6)}`,
+            createdManually: true,
+            criadoEm: todayISO(),
+            importadoEm: todayISO(),
+            assignedAt: todayISO()
+          };
+          this.store.cases.push(c);
+        }
+        if (c.lockedBy && c.lockedBy !== auditPayload.auditorId) throw new Error("Este caso esta bloqueado por outro usuario.");
+        Object.assign(c, caseData, {
+          status: STATUS.CONCLUIDO,
+          auditorId: c.auditorId || auditPayload.auditorId,
+          lockedBy: null,
+          lockedAt: null,
+          completedAt: todayISO()
+        });
+        const payload = {
+          ...auditPayload,
+          caseId: c.id,
+          concluidaEm: todayISO(),
+          officialSaved: this.remoteConnected
+        };
+        if (auditPayload.id) {
+          const existing = this.store.audits.find(a => a.id === auditPayload.id);
+          if (existing) Object.assign(existing, payload);
+        } else {
+          this.store.audits.push({ id: nextId(this.store.audits), ...payload });
+        }
+        return { case: { ...c }, audit: payload };
+      }
+    };
 
-    function createMockAudit(caseId, auditorId, answers, obs, date) {
-      const c = state.cases.find(item => item.id === caseId);
-      const criteria = getCriteria(c.tipoAuditoria).map((crit, index) => ({
-        criterioNome: crit.nome,
-        peso: crit.peso,
-        resposta: answers[index] || ANSWERS.OK,
-        observacaoIndividual: index % 4 === 0 ? "Registro de exemplo para validar o detalhamento." : ""
-      }));
-      const nota = calculateScore(criteria);
-      state.audits.push({
-        id: nextId(state.audits),
-        caseId,
-        auditorId,
-        criterios: criteria,
-        notaFinal: nota,
-        classificacao: classify(nota),
-        observacaoGeral: obs,
-        concluidaEm: date,
-        manualSimplified: false
-      });
+    function refreshStateFromService() {
+      const snapshot = DataService.snapshot();
+      state.users = snapshot.users;
+      state.cases = snapshot.cases;
+      state.audits = snapshot.audits;
+      state.setupMode = !DataService.hasUsers();
+      const serviceStatus = DataService.status();
+      state.connectionStatus = serviceStatus.connected ? "conectado" : "aguardando_banco";
+      state.connectionMessage = serviceStatus.detail;
     }
-
     function getCriteria(type) {
       return (criteriaCatalog[type] || []).map(([nome, peso]) => ({ nome, peso }));
     }
@@ -1900,9 +2109,15 @@ langchain-ollama
     }
 
     function statusBadge(status) {
-      return status === STATUS.CONCLUIDO
-        ? `<span class="badge success">${icon("ph-check-circle")} Concluído</span>`
-        : `<span class="badge warning">${icon("ph-clock")} Pendente</span>`;
+      const map = {
+        [STATUS.CONCLUIDO]: ["success", "ph-check-circle", "Concluído"],
+        [STATUS.EM_AUDITORIA]: ["info", "ph-pencil-simple-line", "Em auditoria"],
+        [STATUS.BLOQUEADO]: ["neutral", "ph-lock", "Bloqueado"],
+        [STATUS.ERRO_SYNC]: ["danger", "ph-warning-octagon", "Erro de sincronização"],
+        [STATUS.PENDENTE]: ["warning", "ph-clock", "Pendente"]
+      };
+      const [variant, iconName, label] = map[status] || map[STATUS.PENDENTE];
+      return `<span class="badge ${variant}">${icon(iconName)} ${label}</span>`;
     }
 
     function slaInfo(c) {
@@ -1989,7 +2204,13 @@ langchain-ollama
       return state.audits.find(a => a.caseId === caseId);
     }
 
+    /* =========================================================
+       LOGIN E SESSÃO
+       Permissões no front-end são apenas camada visual. A segurança
+       final deve ser aplicada pelo serviço remoto.
+       ========================================================= */
     document.getElementById("loginForm").addEventListener("submit", handleLogin);
+    document.getElementById("setupForm").addEventListener("submit", handleInitialSetup);
 
     function togglePassword() {
       const input = document.getElementById("loginPass");
@@ -2021,7 +2242,7 @@ langchain-ollama
       btn.disabled = true;
 
       setTimeout(() => {
-        const user = state.users.find(u => u.login === login && u.senha === senha && u.ativo);
+        const user = DataService.login(login, senha);
         state.loginLoading = false;
         btn.disabled = false;
         btn.innerHTML = `${icon("ph-sign-in")} Entrar`;
@@ -2039,6 +2260,50 @@ langchain-ollama
       }, 650);
     }
 
+    function handleInitialSetup(event) {
+      event.preventDefault();
+      const nome = document.getElementById("setupName").value.trim();
+      const login = document.getElementById("setupLogin").value.trim();
+      const senha = document.getElementById("setupPass").value;
+      clearSetupErrors();
+      let hasError = false;
+      if (!nome) { markSetupError("setupName", "Informe o nome do admin."); hasError = true; }
+      if (!login) { markSetupError("setupLogin", "Informe um login."); hasError = true; }
+      if (!senha || senha.length < 6) { markSetupError("setupPass", "Use uma senha com pelo menos 6 caracteres."); hasError = true; }
+      if (hasError) return;
+      try {
+        const user = DataService.createInitialAdmin({ nome, login, senha });
+        refreshStateFromService();
+        renderLoginMode();
+        state.currentUser = user;
+        state.currentTab = "adminDashboard";
+        document.getElementById("loginView").classList.add("hidden");
+        document.getElementById("appView").classList.remove("hidden");
+        renderApp();
+        showToast("Primeiro admin criado para esta sessão.", "success");
+      } catch (err) {
+        showToast(err.message || "Não foi possível criar o admin inicial.", "error");
+      }
+    }
+
+    function clearSetupErrors() {
+      ["setupName", "setupLogin", "setupPass"].forEach(id => {
+        document.getElementById(`${id}Row`).classList.remove("invalid");
+        document.getElementById(`${id}Error`).textContent = "";
+      });
+    }
+
+    function markSetupError(id, message) {
+      document.getElementById(`${id}Row`).classList.add("invalid");
+      document.getElementById(`${id}Error`).textContent = message;
+    }
+
+    function renderLoginMode() {
+      const isSetup = state.setupMode;
+      document.getElementById("loginForm").classList.toggle("hidden", isSetup);
+      document.getElementById("setupForm").classList.toggle("hidden", !isSetup);
+    }
+
     function clearLoginErrors() {
       ["loginUser", "loginPass"].forEach(id => {
         document.getElementById(`${id}Row`).classList.remove("invalid");
@@ -2053,11 +2318,27 @@ langchain-ollama
     }
 
     function logout() {
+      if (hasUnsavedAudit()) {
+        showModal({
+          title: `${icon("ph-warning-circle")} Existem alterações não salvas`,
+          body: "Você tem uma auditoria em andamento. Ao sair, o rascunho temporário desta tela será descartado.",
+          actions: `
+            <button class="btn btn-secondary" onclick="closeModal()">Continuar editando</button>
+            <button class="btn btn-danger" onclick="closeModal(); forceLogout();">${icon("ph-sign-out")} Sair mesmo assim</button>
+          `
+        });
+        return;
+      }
+      forceLogout();
+    }
+
+    function forceLogout() {
+      clearCurrentAudit({ releaseLock: true });
       state.currentUser = null;
       state.currentTab = null;
-      state.currentAudit = null;
       document.getElementById("appView").classList.add("hidden");
       document.getElementById("loginView").classList.remove("hidden");
+      renderLoginMode();
       document.getElementById("loginForm").reset();
       showToast("Sessão encerrada.", "info");
     }
@@ -2092,6 +2373,17 @@ langchain-ollama
     }
 
     function setTab(tab) {
+      if (hasUnsavedAudit() && tab !== state.currentTab) {
+        showModal({
+          title: `${icon("ph-warning-circle")} Alterações não salvas`,
+          body: "Você tem alterações não salvas nesta auditoria. Salve o rascunho ou descarte as alterações antes de trocar de tela.",
+          actions: `
+            <button class="btn btn-secondary" onclick="closeModal()">Continuar editando</button>
+            <button class="btn btn-danger" onclick="discardAuditChanges('${tab}')">${icon("ph-trash")} Descartar e sair</button>
+          `
+        });
+        return;
+      }
       state.currentTab = tab;
       renderApp();
     }
@@ -2117,7 +2409,7 @@ langchain-ollama
         <span class="avatar">${escapeHTML(user.nome.split(" ").map(p => p[0]).slice(0, 2).join(""))}</span>
         <span class="user-meta">
           <strong>${escapeHTML(user.nome)}</strong><br>
-          <span class="caption">${profileLabel(user.perfil)}</span>
+          <span class="caption">${profileLabel(user.perfil)} · ${APP_VERSION}</span>
         </span>
       `;
     }
@@ -2146,10 +2438,16 @@ langchain-ollama
           <div>
             <h1>${title}</h1>
             <p>${subtitle}</p>
+            <div style="margin-top:10px">${connectionBadge()}</div>
           </div>
           <div>${action}</div>
         </div>
       `;
+    }
+
+    function connectionBadge() {
+      const connected = state.connectionStatus === "conectado";
+      return `<span class="badge ${connected ? "success" : "warning"}">${icon(connected ? "ph-cloud-check" : "ph-database")} ${connected ? "Dados oficiais sincronizados" : "Aguardando serviço remoto"}</span>`;
     }
 
     function kpi(label, value, iconName, caption = "", variant = "info") {
@@ -2168,7 +2466,11 @@ langchain-ollama
     }
 
     function renderQueue() {
-      const mine = state.cases.filter(c => c.auditorId === state.currentUser.id);
+      const mine = state.cases.filter(c =>
+        c.auditorId === state.currentUser.id ||
+        (!c.auditorId && [STATUS.PENDENTE, STATUS.EM_AUDITORIA].includes(c.status)) ||
+        c.lockedBy === state.currentUser.id
+      );
       const filtered = mine.filter(c => {
         const byStatus = state.filters.queueStatus === "todos" || c.status === state.filters.queueStatus;
         const byBpo = state.filters.queueBpo === "todos" || c.bpo === state.filters.queueBpo;
@@ -2180,7 +2482,7 @@ langchain-ollama
         ${pageHead("Minha Lista", "Casos atribuídos ao seu login e auditorias avulsas criadas por você, com SLA individual por data de atribuição.")}
         ${queueFilters()}
         <div class="case-list">
-          ${filtered.length ? filtered.map(renderCaseCard).join("") : emptyState("Nenhum caso encontrado", "Ajuste os filtros ou aguarde uma nova distribuição de casos para sua fila.")}
+          ${filtered.length ? filtered.map(renderCaseCard).join("") : emptyState("Nenhum caso importado ainda", "Importe uma planilha Excel para iniciar as auditorias ou peça ao admin para distribuir casos.")}
         </div>
       `;
     }
@@ -2192,6 +2494,8 @@ langchain-ollama
             ${selectField("Status", "queueStatus", [
               ["todos", "Todos"],
               [STATUS.PENDENTE, "Pendente"],
+              [STATUS.EM_AUDITORIA, "Em auditoria"],
+              [STATUS.BLOQUEADO, "Bloqueado"],
               [STATUS.CONCLUIDO, "Concluído"]
             ])}
             ${selectField("BPO", "queueBpo", [["todos", "Todos"], ...uniqueOptions(state.cases.map(c => c.bpo))])}
@@ -2240,9 +2544,16 @@ langchain-ollama
     function renderCaseCard(c, adminMode = false) {
       const sla = slaInfo(c);
       const auditor = c.auditorId ? userById(c.auditorId) : null;
-      const actionLabel = c.status === STATUS.CONCLUIDO ? "Ver auditoria" : "Iniciar auditoria";
+      const lockedByOther = !!c.lockedBy && c.lockedBy !== state.currentUser.id;
+      const lockedByMe = c.lockedBy === state.currentUser.id;
+      const actionLabel = c.status === STATUS.CONCLUIDO ? "Ver auditoria" : lockedByOther ? "Em uso" : lockedByMe ? "Continuar auditoria" : "Iniciar auditoria";
+      const cardAction = c.status === STATUS.CONCLUIDO
+        ? `openAuditReadByCase(${c.id})`
+        : lockedByOther
+          ? `showToast('Este caso está em auditoria por outro usuário.', 'warning')`
+          : `startAudit(${c.id}, '${adminMode ? "admin" : "auditor"}')`;
       return `
-        <article class="case-card" onclick="${c.status === STATUS.CONCLUIDO ? `openAuditReadByCase(${c.id})` : `startAudit(${c.id}, '${adminMode ? "admin" : "auditor"}')`}">
+        <article class="case-card" onclick="${cardAction}">
           <div class="case-main">
             <h3>${escapeHTML(c.idCaso)} · ${escapeHTML(caseSubject(c))}</h3>
             <div class="case-meta">
@@ -2258,8 +2569,8 @@ langchain-ollama
             </div>
           </div>
           <div class="case-actions">
-            <button class="btn ${c.status === STATUS.CONCLUIDO ? "btn-secondary" : "btn-primary"}" onclick="event.stopPropagation(); ${c.status === STATUS.CONCLUIDO ? `openAuditReadByCase(${c.id})` : `startAudit(${c.id}, '${adminMode ? "admin" : "auditor"}')`}">
-              ${icon(c.status === STATUS.CONCLUIDO ? "ph-eye" : "ph-play")} ${actionLabel}
+            <button class="btn ${c.status === STATUS.CONCLUIDO || lockedByOther ? "btn-secondary" : "btn-primary"}" ${lockedByOther ? "disabled" : ""} onclick="event.stopPropagation(); ${cardAction}">
+              ${icon(c.status === STATUS.CONCLUIDO ? "ph-eye" : lockedByOther ? "ph-lock" : "ph-play")} ${actionLabel}
             </button>
           </div>
         </article>
@@ -2270,7 +2581,10 @@ langchain-ollama
       if (state.currentAudit && state.currentAudit.context === "auditor") {
         return renderAuditWorkspace();
       }
-      const pending = state.cases.filter(c => c.auditorId === state.currentUser.id && c.status === STATUS.PENDENTE);
+      const pending = state.cases.filter(c =>
+        (c.auditorId === state.currentUser.id || !c.auditorId || c.lockedBy === state.currentUser.id) &&
+        [STATUS.PENDENTE, STATUS.EM_AUDITORIA].includes(c.status)
+      );
       return `
         ${pageHead("Nova Auditoria", "Inicie um caso atribuído ou cadastre uma auditoria avulsa com os dados mínimos de cada tipo.")}
         <div class="card" style="margin-bottom:24px;border-color:color-mix(in srgb,var(--primary) 28%,var(--line));">
@@ -2324,6 +2638,7 @@ langchain-ollama
       return `
         ${pageHead(audit.mode === "read" ? "Auditoria Concluída" : audit.mode === "edit" ? "Editar Auditoria" : "Nova Auditoria", `${escapeHTML(audit.caseData.idCaso)} · ${escapeHTML(caseSubject(audit.caseData))} · ${escapeHTML(labels[audit.caseData.tipoAuditoria] || audit.caseData.tipoAuditoria)}`)}
         <div class="card">
+          ${saveStatusBanner()}
           ${renderStepper(audit.step)}
           ${audit.step === 1 ? renderStep1() : audit.step === 2 ? renderStep2() : renderStep3()}
         </div>
@@ -2343,9 +2658,66 @@ langchain-ollama
       `;
     }
 
+    function saveStatusMeta(status = state.saveStatus) {
+      const map = {
+        "salvando": ["info", "ph-arrows-clockwise", "Salvando rascunho"],
+        "salvo": ["success", "ph-check-circle", "Salvo"],
+        "erro ao salvar": ["danger", "ph-warning-octagon", "Erro ao salvar"],
+        "sem conexão com o serviço": ["warning", "ph-plugs", "Sem conexão com o serviço"],
+        "aguardando banco de dados": ["neutral", "ph-database", "Aguardando banco de dados"]
+      };
+      return map[status] || map["aguardando banco de dados"];
+    }
+
+    function saveStatusBanner() {
+      if (!state.currentAudit || state.currentAudit.mode === "read") return "";
+      const [variant, iconName, label] = saveStatusMeta();
+      const detail = DataService.remoteConnected
+        ? "Alterações serão sincronizadas pelo serviço remoto."
+        : "Rascunhos ficam temporários nesta sessão até a integração com o SQLite remoto.";
+      return `
+        <div class="save-status-row" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:18px">
+          <span class="badge ${variant}">${icon(iconName)} ${label}</span>
+          <span class="caption">${detail}</span>
+        </div>
+      `;
+    }
+
+    function markAuditDirty() {
+      if (!state.currentAudit || state.currentAudit.mode === "read") return;
+      state.currentAudit.dirty = true;
+      state.saveStatus = "salvando";
+    }
+
+    function hasUnsavedAudit() {
+      return !!state.currentAudit && state.currentAudit.mode !== "read" && !!state.currentAudit.dirty;
+    }
+
+    function currentDraftPayload() {
+      const audit = state.currentAudit;
+      if (!audit) return null;
+      return {
+        draftKey: audit.caseId || audit.caseData.idCaso,
+        caseId: audit.caseId || null,
+        auditorId: audit.auditorId,
+        step: audit.step,
+        caseData: { ...audit.caseData },
+        criteria: audit.criteria.map(item => ({ ...item })),
+        observacaoGeral: audit.observacaoGeral || "",
+        manualSimplified: !!audit.manualSimplified,
+        manualScore: audit.manualScore
+      };
+    }
+
     function startAudit(caseId, context) {
-      const c = caseById(caseId);
-      if (!c) return showToast("Caso não encontrado.", "error");
+      let c;
+      try {
+        c = DataService.lockCase(caseId, state.currentUser.id);
+        refreshStateFromService();
+      } catch (err) {
+        showToast(err.message || "Não foi possível reservar este caso.", "error");
+        return;
+      }
       const criteria = getCriteria(c.tipoAuditoria).map(crit => ({
         criterioNome: crit.nome,
         peso: crit.peso,
@@ -2367,8 +2739,10 @@ langchain-ollama
         manualScore: "",
         observacaoGeral: "",
         errors: {},
-        lastSavedAt: null
+        lastSavedAt: null,
+        dirty: false
       };
+      state.saveStatus = DataService.remoteConnected ? "salvo" : "aguardando banco de dados";
       state.currentTab = context === "admin" ? "createAudit" : "newAudit";
       renderApp();
     }
@@ -2418,8 +2792,10 @@ langchain-ollama
         manualScore: "",
         observacaoGeral: "",
         errors: {},
-        lastSavedAt: null
+        lastSavedAt: null,
+        dirty: false
       };
+      state.saveStatus = DataService.remoteConnected ? "salvo" : "aguardando banco de dados";
       state.currentTab = context === "admin" ? "createAudit" : "newAudit";
       renderApp();
     }
@@ -2446,6 +2822,8 @@ langchain-ollama
       state.currentAudit.manualSimplified = false;
       state.currentAudit.manualScore = "";
       state.currentAudit.errors = {};
+      markAuditDirty();
+      autosaveNow(false);
       renderActiveTab();
     }
 
@@ -2473,8 +2851,10 @@ langchain-ollama
         manualScore: a.manualSimplified ? String(a.notaFinal) : "",
         observacaoGeral: a.observacaoGeral || "",
         errors: {},
-        lastSavedAt: null
+        lastSavedAt: null,
+        dirty: false
       };
+      state.saveStatus = DataService.remoteConnected ? "salvo" : "aguardando banco de dados";
       state.currentTab = hasManagerAccess() ? "createAudit" : "newAudit";
       renderApp();
     }
@@ -2498,6 +2878,7 @@ langchain-ollama
           ${isText ? auditInput("Cliente", "cliente", data.cliente || data.atendente, false, e.cliente) : auditInput("Atendente", "atendente", data.atendente, false, e.atendente)}
           ${auditInput("BPO", "bpo", data.bpo, false, e.bpo)}
           ${isText ? auditInput("Proposta/Consulta", "propostaConsulta", data.propostaConsulta, false, e.propostaConsulta, "wide") : auditSelect("Tipo da ligação", "tipoLigacao", data.tipoLigacao, [["Ativa", "Ativa"], ["Receptiva", "Receptiva"]], e.tipoLigacao)}
+          ${!isText ? auditInput("Tempo de ligação", "tempoLigacao", data.tempoLigacao, false, e.tempoLigacao) : ""}
           ${isText ? auditInput("Contrato", "contrato", data.contrato, false, e.contrato) : ""}
           ${auditInput("ID gerado", "idCaso", data.idCaso, true, e.idCaso)}
         </div>
@@ -2548,13 +2929,14 @@ langchain-ollama
       if (!state.currentAudit) return;
       state.currentAudit.caseData[key] = value;
       if (state.currentAudit.errors) state.currentAudit.errors[key] = "";
+      markAuditDirty();
     }
 
     function validateStep1() {
       const data = state.currentAudit.caseData;
       const required = data.tipoAuditoria === "Escrita Mensageria"
         ? ["cliente", "bpo", "tipoAuditoria", "idCaso", "propostaConsulta", "contrato"]
-        : ["atendente", "bpo", "tipoAuditoria", "tipoLigacao", "idCaso"];
+        : ["atendente", "bpo", "tipoAuditoria", "tipoLigacao", "tempoLigacao", "idCaso"];
       const errors = {};
       required.forEach(key => {
         if (!String(state.currentAudit.caseData[key] || "").trim()) errors[key] = "Campo obrigatório.";
@@ -2669,7 +3051,8 @@ langchain-ollama
 
     function autosaveIndicator() {
       const last = state.currentAudit?.lastSavedAt;
-      return `<span class="badge neutral">${icon("ph-floppy-disk")} ${last ? `Salvo às ${last}` : "Autosave ativo"}</span>`;
+      const [variant, iconName, label] = saveStatusMeta();
+      return `<span class="badge ${variant}">${icon(iconName)} ${last ? `${label} às ${last}` : label}</span>`;
     }
 
     function renderCriterion(item, index) {
@@ -2707,6 +3090,7 @@ langchain-ollama
     function setAnswer(index, value) {
       state.currentAudit.criteria[index].resposta = value;
       state.currentAudit.openCriteria[index] = true;
+      markAuditDirty();
       autosaveNow(false);
       renderActiveTab();
       requestAnimationFrame(() => {
@@ -2720,6 +3104,7 @@ langchain-ollama
 
     function updateCriterionObs(index, value) {
       state.currentAudit.criteria[index].observacaoIndividual = value;
+      markAuditDirty();
     }
 
     function toggleCriterion(index) {
@@ -2730,6 +3115,7 @@ langchain-ollama
     function setManualMode(enabled) {
       state.currentAudit.manualSimplified = enabled;
       state.currentAudit.errors = {};
+      markAuditDirty();
       autosaveNow(false);
       renderActiveTab();
     }
@@ -2737,11 +3123,13 @@ langchain-ollama
     function updateManualScore(value) {
       state.currentAudit.manualScore = value;
       if (state.currentAudit.errors) state.currentAudit.errors.manualScore = "";
+      markAuditDirty();
     }
 
     function updateGeneralObs(value) {
       state.currentAudit.observacaoGeral = value;
       if (state.currentAudit.errors) state.currentAudit.errors.observacaoGeral = "";
+      markAuditDirty();
     }
 
     function validateStep2() {
@@ -2831,6 +3219,7 @@ langchain-ollama
           ${detail("BPO", c.bpo)}
           ${c.tipoAuditoria === "Escrita Mensageria" ? detail("Cliente", caseSubject(c)) : detail("Atendente", caseSubject(c))}
           ${c.tipoAuditoria === "Escrita Mensageria" ? detail("Proposta/Consulta", c.propostaConsulta) : detail("Tipo ligação", c.tipoLigacao)}
+          ${c.tipoAuditoria === "Escrita Mensageria" ? "" : detail("Tempo ligação", c.tempoLigacao)}
           ${c.tipoAuditoria === "Escrita Mensageria" ? detail("Contrato", c.contrato) : detail("Auditor", userById(audit.auditorId)?.nome || "-")}
         </div>
 
@@ -2876,6 +3265,7 @@ langchain-ollama
 
     function markAllOk() {
       state.currentAudit.criteria.forEach(item => item.resposta = ANSWERS.OK);
+      markAuditDirty();
       autosaveNow();
       renderActiveTab();
       showToast("Checklist preenchido como Atendeu.", "success");
@@ -2883,9 +3273,18 @@ langchain-ollama
 
     function autosaveNow(show = true) {
       if (!state.currentAudit) return;
-      const d = new Date();
-      state.currentAudit.lastSavedAt = d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
-      if (show) showToast("Rascunho salvo automaticamente.", "info");
+      try {
+        state.saveStatus = "salvando";
+        const saved = DataService.saveDraft(currentDraftPayload());
+        const d = new Date(saved.savedAt);
+        state.currentAudit.lastSavedAt = d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+        state.currentAudit.dirty = false;
+        state.saveStatus = saved.officialSaved ? "salvo" : "aguardando banco de dados";
+        if (show) showToast(saved.officialSaved ? "Rascunho salvo." : "Rascunho mantido temporariamente nesta sessão.", "info");
+      } catch (err) {
+        state.saveStatus = DataService.remoteConnected ? "erro ao salvar" : "sem conexão com o serviço";
+        if (show) showToast("Não foi possível salvar o rascunho. Verifique a conexão com o serviço.", "error");
+      }
     }
 
     setInterval(() => {
@@ -2894,6 +3293,12 @@ langchain-ollama
         if (state.currentTab === "newAudit" || state.currentTab === "createAudit") renderActiveTab();
       }
     }, 30000);
+
+    window.addEventListener("beforeunload", event => {
+      if (!hasUnsavedAudit()) return;
+      event.preventDefault();
+      event.returnValue = "";
+    });
 
     function saveCurrentAudit() {
       if (!state.currentAudit || state.saveLoading) return;
@@ -2905,65 +3310,78 @@ langchain-ollama
         return;
       }
       state.saveLoading = true;
+      state.saveStatus = "salvando";
       renderActiveTab();
       setTimeout(() => {
-        const result = calculateCurrentAudit();
-        let c = audit.caseId ? caseById(audit.caseId) : null;
-        if (!c) {
-          const newCase = {
-            ...audit.caseData,
-            id: nextId(state.cases),
+        try {
+          const result = calculateCurrentAudit();
+          const normalizedCase = { ...audit.caseData };
+          if (normalizedCase.tipoAuditoria === "Escrita Mensageria") normalizedCase.atendente = normalizedCase.cliente || normalizedCase.atendente;
+          const payload = {
+            id: audit.editingAuditId,
+            caseId: audit.caseId,
             auditorId: audit.auditorId,
-            status: STATUS.CONCLUIDO,
-            criadoEm: todayISO(),
-            importadoEm: todayISO(),
-            assignedAt: todayISO(),
-            completedAt: todayISO(),
-            createdManually: true
+            criterios: audit.manualSimplified ? [] : audit.criteria.map(item => ({ ...item })),
+            notaFinal: result.notaFinal,
+            classificacao: result.classificacao,
+            observacaoGeral: audit.observacaoGeral || "",
+            manualSimplified: audit.manualSimplified
           };
-          if (newCase.tipoAuditoria === "Escrita Mensageria") newCase.atendente = newCase.cliente;
-          state.cases.push(newCase);
-          c = newCase;
-          audit.caseId = c.id;
-        } else {
-          const normalized = { ...audit.caseData };
-          if (normalized.tipoAuditoria === "Escrita Mensageria") normalized.atendente = normalized.cliente || normalized.atendente;
-          Object.assign(c, normalized, { auditorId: c.auditorId || audit.auditorId, status: STATUS.CONCLUIDO, completedAt: todayISO() });
+          const saved = DataService.concludeAudit(payload, normalizedCase);
+          if (state.currentAudit) state.currentAudit.dirty = false;
+          refreshStateFromService();
+          state.saveStatus = DataService.remoteConnected ? "salvo" : "aguardando banco de dados";
+          state.saveLoading = false;
+          showModal({
+            title: `${icon("ph-check-circle")} Auditoria salva`,
+            body: `O caso ${escapeHTML(saved.case.idCaso)} foi concluído. ${DataService.remoteConnected ? "Dados sincronizados com o serviço." : "No protótipo local, os dados permanecem temporários até a conexão com o SQLite remoto."}`,
+            actions: `<button class="btn btn-primary" onclick="closeModal()">${icon("ph-arrow-right")} Continuar</button>`,
+            onClose: () => {
+              state.currentAudit = null;
+              state.currentTab = hasManagerAccess() ? "myAudits" : "queue";
+              renderApp();
+            }
+          });
+        } catch (err) {
+          state.saveLoading = false;
+          state.saveStatus = "erro ao salvar";
+          renderActiveTab();
+          showToast(err.message || "Não foi possível salvar. Verifique a conexão com o serviço.", "error");
         }
-        const payload = {
-          caseId: c.id,
-          auditorId: audit.auditorId,
-          criterios: audit.manualSimplified ? [] : audit.criteria.map(item => ({ ...item })),
-          notaFinal: result.notaFinal,
-          classificacao: result.classificacao,
-          observacaoGeral: audit.observacaoGeral || "",
-          concluidaEm: todayISO(),
-          manualSimplified: audit.manualSimplified
-        };
-        if (audit.editingAuditId) {
-          const existing = auditById(audit.editingAuditId);
-          Object.assign(existing, payload);
-        } else {
-          state.audits.push({ id: nextId(state.audits), ...payload });
-        }
-        state.saveLoading = false;
-        showModal({
-          title: `${icon("ph-check-circle")} Auditoria salva`,
-          body: `O caso ${escapeHTML(c.idCaso)} foi marcado como concluído e os indicadores foram atualizados.`,
-          actions: `<button class="btn btn-primary" onclick="closeModal()">${icon("ph-arrow-right")} Continuar</button>`,
-          onClose: () => {
-            state.currentAudit = null;
-            state.currentTab = hasManagerAccess() ? "myAudits" : "queue";
-            renderApp();
-          }
-        });
       }, 1000);
     }
 
     function cancelAudit() {
+      if (hasUnsavedAudit()) {
+        showModal({
+          title: `${icon("ph-warning-circle")} Descartar auditoria em andamento?`,
+          body: "Existem alterações não salvas oficialmente. Se descartar, a reserva do caso será liberada nesta sessão.",
+          actions: `
+            <button class="btn btn-secondary" onclick="closeModal()">Continuar editando</button>
+            <button class="btn btn-danger" onclick="discardAuditChanges()">${icon("ph-trash")} Descartar</button>
+          `
+        });
+        return;
+      }
+      clearCurrentAudit({ releaseLock: true });
+      state.currentTab = hasManagerAccess() ? "createAudit" : "queue";
+      renderApp();
+    }
+
+    function clearCurrentAudit({ releaseLock = false } = {}) {
+      if (releaseLock && state.currentAudit?.caseId && state.currentUser) {
+        DataService.releaseCase(state.currentAudit.caseId, state.currentUser.id);
+        refreshStateFromService();
+      }
       state.currentAudit = null;
       state.saveLoading = false;
-      state.currentTab = hasManagerAccess() ? "createAudit" : "queue";
+      state.saveStatus = DataService.remoteConnected ? "salvo" : "aguardando banco de dados";
+    }
+
+    function discardAuditChanges(targetTab = "") {
+      closeModal();
+      clearCurrentAudit({ releaseLock: true });
+      state.currentTab = targetTab || (hasManagerAccess() ? "createAudit" : "queue");
       renderApp();
     }
 
@@ -3103,7 +3521,7 @@ langchain-ollama
     function renderMyDashboard() {
       const assigned = state.cases.filter(c => c.auditorId === state.currentUser.id);
       const done = assigned.filter(c => c.status === STATUS.CONCLUIDO);
-      const pending = assigned.filter(c => c.status === STATUS.PENDENTE);
+      const pending = assigned.filter(c => [STATUS.PENDENTE, STATUS.EM_AUDITORIA].includes(c.status));
       const overdue = pending.filter(c => slaInfo(c).overdue);
       const urgent = [...pending].sort((a, b) => slaInfo(a).daysLeft - slaInfo(b).daysLeft)[0];
       const audits = state.audits.filter(a => a.auditorId === state.currentUser.id);
@@ -3129,7 +3547,7 @@ langchain-ollama
             <div class="grid grid-3" style="gap:12px">
               <div class="summary-tile"><strong>${audits.length}</strong><span class="caption">Auditorias salvas</span></div>
               <div class="summary-tile"><strong>${assigned.length ? Math.round((done.length / assigned.length) * 100) : 0}%</strong><span class="caption">Carteira concluída</span></div>
-              <div class="summary-tile"><strong>${pending.length ? Math.round(((pending.length - overdue.length) / pending.length) * 100) : 100}%</strong><span class="caption">Pendências no prazo</span></div>
+              <div class="summary-tile"><strong>${pending.length ? Math.round(((pending.length - overdue.length) / pending.length) * 100) : 0}%</strong><span class="caption">Pendências no prazo</span></div>
             </div>
           </div>
           <div class="card">
@@ -3196,7 +3614,8 @@ langchain-ollama
       const total = dashboardCases.length;
       const doneCases = dashboardCases.filter(c => c.status === STATUS.CONCLUIDO).length;
       const pending = dashboardCases.filter(c => c.status === STATUS.PENDENTE);
-      const overdue = pending.filter(c => slaInfo(c).overdue).length;
+      const inAudit = dashboardCases.filter(c => c.status === STATUS.EM_AUDITORIA).length;
+      const overdue = dashboardCases.filter(c => c.status !== STATUS.CONCLUIDO && slaInfo(c).overdue).length;
       const avg = avgAudit(dashboardAudits);
       return `
         ${pageHead("Dashboard Global", "Visão executiva de SLA, volume e qualidade por auditor, BPO e período.", `<button class="btn btn-primary" onclick="exportHistory('global')">${icon("ph-download-simple")} Exportar relatório geral</button>`)}
@@ -3205,6 +3624,7 @@ langchain-ollama
           ${kpi("Total de casos", total, "ph-files", "Casos dentro dos filtros")}
           ${kpi("Concluídos", doneCases, "ph-check-circle", "Auditorias finalizadas")}
           ${kpi("Pendentes", pending.length, "ph-hourglass-medium", "Aguardando auditoria")}
+          ${kpi("Em auditoria", inAudit, "ph-pencil-simple-line", "Reservados por usuários")}
           ${kpi("Atrasados SLA", overdue, "ph-warning-circle", `Prazo padrão: ${state.config.slaDays} dias`)}
         </div>
         <div class="grid grid-3" style="margin-bottom:24px">
@@ -3278,7 +3698,7 @@ langchain-ollama
       const avg = avgAudit(audits);
       const excellent = audits.filter(a => a.classificacao === "Excelente").length;
       const critical = audits.filter(a => a.classificacao === "Crítico").length;
-      const slaCompliance = total ? Math.round(((total - overdue) / total) * 100) : 100;
+      const slaCompliance = total ? Math.round(((total - overdue) / total) * 100) : 0;
       const completion = total ? Math.round((done / total) * 100) : 0;
       const topCriteria = failingCriteriaSummary(audits).slice(0, 4);
       const positiveCriteria = positiveCriteriaSummary(audits).slice(0, 3);
@@ -3536,7 +3956,7 @@ langchain-ollama
                 const done = assigned.filter(c => c.status === STATUS.CONCLUIDO);
                 const pending = assigned.filter(c => c.status === STATUS.PENDENTE);
                 const late = pending.filter(c => slaInfo(c).overdue);
-                const compliance = assigned.length ? ((assigned.length - late.length) / assigned.length) * 100 : 100;
+        const compliance = assigned.length ? ((assigned.length - late.length) / assigned.length) * 100 : 0;
                 return `<tr>
                   <td><strong>${escapeHTML(u.nome)}</strong></td>
                   <td>${assigned.length}</td>
@@ -3607,15 +4027,23 @@ langchain-ollama
 
     function renderUsers() {
       return `
-        ${pageHead("Usuários", "Crie, edite e desative auditores. Ao adicionar auditor ativo, casos pendentes são redistribuídos com equilíbrio.")}
+        ${pageHead("Usuários", "Crie, edite e desative usuários. Ao adicionar auditor ativo, casos pendentes são redistribuídos com equilíbrio.")}
         <div class="grid">
           <div class="card">
-            <div class="card-title"><h2>Novo auditor</h2></div>
+            <div class="card-title"><h2>Novo usuário</h2></div>
             <form class="form-grid" onsubmit="createUser(event)">
-              <div class="form-row"><label>Nome</label><input id="newUserName" required placeholder="Nome do auditor"></div>
+              <div class="form-row"><label>Nome</label><input id="newUserName" required placeholder="Nome do usuário"></div>
               <div class="form-row"><label>Login</label><input id="newUserLogin" required placeholder="login.sem.espacos"></div>
               <div class="form-row"><label>Senha</label><input id="newUserPass" required type="password" placeholder="Senha inicial"></div>
-              <button class="btn btn-primary" type="submit">${icon("ph-plus")} Criar auditor</button>
+              <div class="form-row">
+                <label>Perfil</label>
+                <select id="newUserProfile">
+                  <option value="auditor">Auditor</option>
+                  <option value="admin">Admin</option>
+                  <option value="desenvolvedor">Desenvolvedor</option>
+                </select>
+              </div>
+              <button class="btn btn-primary" type="submit">${icon("ph-plus")} Criar usuário</button>
             </form>
           </div>
         </div>
@@ -3652,12 +4080,17 @@ langchain-ollama
       const nome = document.getElementById("newUserName").value.trim();
       const login = document.getElementById("newUserLogin").value.trim();
       const senha = document.getElementById("newUserPass").value;
-      if (!nome || !login || !senha) return showToast("Preencha todos os campos do novo auditor.", "warning");
-      if (state.users.some(u => u.login === login)) return showToast("Já existe usuário com este login.", "error");
-      state.users.push({ id: nextId(state.users), nome, login, senha, perfil: "auditor", ativo: true, criadoEm: todayISO() });
-      redistributePendingCases();
-      renderActiveTab();
-      showToast("Auditor criado e casos pendentes redistribuídos.", "success");
+      const perfil = document.getElementById("newUserProfile").value;
+      if (!nome || !login || !senha) return showToast("Preencha todos os campos do novo usuário.", "warning");
+      try {
+        DataService.createUser({ nome, login, senha, perfil });
+        DataService.redistributePendingCases();
+        refreshStateFromService();
+        renderActiveTab();
+        showToast(perfil === "auditor" ? "Auditor criado e casos pendentes redistribuídos." : "Usuário criado.", "success");
+      } catch (err) {
+        showToast(err.message || "Não foi possível criar o usuário.", "error");
+      }
     }
 
     function promptEditUser(id) {
@@ -3669,6 +4102,14 @@ langchain-ollama
             <div class="form-row"><label>Nome</label><input id="editUserName" value="${escapeHTML(u.nome)}"></div>
             <div class="form-row"><label>Login</label><input id="editUserLogin" value="${escapeHTML(u.login)}"></div>
             <div class="form-row"><label>Nova senha (opcional)</label><input id="editUserPass" type="password" placeholder="Manter senha atual"></div>
+            <div class="form-row">
+              <label>Perfil</label>
+              <select id="editUserProfile">
+                <option value="auditor" ${u.perfil === "auditor" ? "selected" : ""}>Auditor</option>
+                <option value="admin" ${u.perfil === "admin" ? "selected" : ""}>Admin</option>
+                <option value="desenvolvedor" ${u.perfil === "desenvolvedor" ? "selected" : ""}>Desenvolvedor</option>
+              </select>
+            </div>
           </div>
         `,
         actions: `
@@ -3683,47 +4124,33 @@ langchain-ollama
       const nome = document.getElementById("editUserName").value.trim();
       const login = document.getElementById("editUserLogin").value.trim();
       const senha = document.getElementById("editUserPass").value;
+      const perfil = document.getElementById("editUserProfile").value;
       if (!nome || !login) return showToast("Nome e login são obrigatórios.", "warning");
-      if (state.users.some(other => other.id !== id && other.login === login)) return showToast("Login já está em uso.", "error");
-      u.nome = nome;
-      u.login = login;
-      if (senha) u.senha = senha;
-      closeModal();
-      renderActiveTab();
-      showToast("Usuário atualizado.", "success");
+      try {
+        DataService.updateUser(id, { nome, login, senha, perfil });
+        DataService.redistributePendingCases();
+        refreshStateFromService();
+        closeModal();
+        renderActiveTab();
+        showToast("Usuário atualizado.", "success");
+      } catch (err) {
+        showToast(err.message || "Não foi possível atualizar o usuário.", "error");
+      }
     }
 
     function toggleUserActive(id) {
       const u = userById(id);
-      u.ativo = !u.ativo;
-      redistributePendingCases();
+      const novoStatus = !u.ativo;
+      DataService.setUserActive(id, novoStatus);
+      DataService.redistributePendingCases();
+      refreshStateFromService();
       renderActiveTab();
-      showToast(u.ativo ? "Usuário ativado e fila redistribuída." : "Usuário desativado e pendências redistribuídas.", "success");
+      showToast(novoStatus ? "Usuário ativado e fila redistribuída." : "Usuário desativado e pendências redistribuídas.", "success");
     }
 
     function redistributePendingCases() {
-      const auditors = activeAuditors();
-      if (!auditors.length) return;
-      const pending = state.cases.filter(c => c.status === STATUS.PENDENTE);
-      const counts = Object.fromEntries(auditors.map(a => [a.id, 0]));
-      const affinity = {};
-      auditors.forEach(a => {
-        affinity[a.id] = {};
-        state.cases.filter(c => c.auditorId === a.id && c.status === STATUS.CONCLUIDO).forEach(c => {
-          affinity[a.id][c.bpo] = (affinity[a.id][c.bpo] || 0) + 1;
-        });
-      });
-      pending.sort((a, b) => a.bpo.localeCompare(b.bpo) || a.id - b.id).forEach(c => {
-        const min = Math.min(...Object.values(counts));
-        const candidates = auditors.filter(a => counts[a.id] === min);
-        candidates.sort((a, b) => (affinity[b.id][c.bpo] || 0) - (affinity[a.id][c.bpo] || 0) || a.id - b.id);
-        const selected = candidates[0];
-        const changed = c.auditorId !== selected.id;
-        c.auditorId = selected.id;
-        if (changed) c.assignedAt = todayISO();
-        counts[selected.id]++;
-        affinity[selected.id][c.bpo] = (affinity[selected.id][c.bpo] || 0) + 1;
-      });
+      DataService.redistributePendingCases();
+      refreshStateFromService();
     }
 
     function renderImportCases() {
@@ -3736,9 +4163,9 @@ langchain-ollama
               <div class="form-row">
                 <label>Selecionar planilha de casos (.xlsx)</label>
                 <input type="file" accept=".xlsx" onchange="handleImportFile(event)">
-                <div class="caption">Colunas esperadas: atendente, bpo, tipo_auditoria, tipo_ligacao, tempo_ligacao, proposta_consulta, contrato.</div>
+                <div class="caption">Colunas mínimas: ${IMPORT_BASE_COLUMNS.join(", ")}. A validação completa muda conforme o tipo de auditoria.</div>
               </div>
-              <button class="btn btn-secondary" onclick="loadSampleImport()">${icon("ph-file-plus")} Usar exemplo de teste</button>
+              <button class="btn btn-secondary" type="button" onclick="showExpectedColumns()">${icon("ph-list-checks")} Ver colunas esperadas</button>
             </div>
           </div>
           <div class="card">
@@ -3756,30 +4183,48 @@ langchain-ollama
           <div class="card">
             <div class="card-title"><h2>Resumo da prévia</h2></div>
             <div class="grid grid-3" style="gap:12px">
-              <div class="summary-tile"><strong>${state.importPreview.length}</strong><span class="caption">Casos válidos</span></div>
+              <div class="summary-tile"><strong>${state.importSummary?.valid || 0}</strong><span class="caption">Linhas válidas</span></div>
               <div class="summary-tile"><strong>${activeAuditors().length}</strong><span class="caption">Auditores ativos</span></div>
-              <div class="summary-tile"><strong>${state.importPreview.filter(r => !criteriaCatalog[r.tipoAuditoria]).length}</strong><span class="caption">Com erro</span></div>
+              <div class="summary-tile"><strong>${state.importSummary?.invalid || 0}</strong><span class="caption">Linhas com erro</span></div>
+              <div class="summary-tile"><strong>${state.importSummary?.duplicates || 0}</strong><span class="caption">Duplicadas</span></div>
             </div>
             <div class="actions-row">
-              <button class="btn btn-primary" onclick="confirmImport()" ${state.importPreview.length ? "" : "disabled"}>${icon("ph-check-circle")} Importar e distribuir casos</button>
+              <button class="btn btn-secondary" onclick="clearImportPreview()" ${state.importPreview.length ? "" : "disabled"}>${icon("ph-x")} Cancelar prévia</button>
+              <button class="btn btn-primary" onclick="confirmImport()" ${(state.importSummary?.valid || 0) ? "" : "disabled"}>${icon("ph-check-circle")} Confirmar importação</button>
             </div>
           </div>
         </div>
         <div class="card" style="margin-top:24px">
           <div class="card-title"><h2>Prévia dos casos</h2></div>
-          ${state.importPreview.length ? importPreviewTable() : emptyState("Nenhum arquivo carregado", "Selecione uma planilha Excel ou use o exemplo de teste para visualizar como a importação funciona.")}
+          ${state.importPreview.length ? importPreviewTable() : emptyState("Nenhum arquivo carregado", "Selecione uma planilha Excel para validar os dados antes de confirmar a importação.")}
         </div>
       `;
     }
 
-    function loadSampleImport() {
-      state.importPreview = [
-        { atendente: "Sofia Almeida", bpo: "BPO Norte", tipoAuditoria: "Telefonica Basica", tipoLigacao: "Receptiva", tempoLigacao: "05:18", propostaConsulta: "Atualização cadastral", contrato: "CTR-2001" },
-        { atendente: "Bruno Torres", bpo: "BPO Sul", tipoAuditoria: "Escrita Mensageria", tipoLigacao: "Chat", tempoLigacao: "13:44", propostaConsulta: "Dúvida de fatura", contrato: "CTR-2002" },
-        { atendente: "Camila Rocha", bpo: "BPO Leste", tipoAuditoria: "Telefonica Tecnica", tipoLigacao: "Ativa", tempoLigacao: "07:03", propostaConsulta: "Configuração técnica", contrato: "CTR-2003" }
-      ];
-      renderActiveTab();
-      showToast("Exemplo de teste carregado para prévia.", "success");
+    function showExpectedColumns() {
+      showModal({
+        title: `${icon("ph-list-checks")} Colunas esperadas`,
+        body: `
+          <p>Use uma planilha com os nomes de colunas na primeira linha. A importação valida os campos de acordo com o tipo de auditoria de cada linha.</p>
+          <p><strong>Mínimas do arquivo:</strong> ${IMPORT_BASE_COLUMNS.join(", ")}</p>
+          <p><strong>Telefônica Básica/Técnica:</strong> ${IMPORT_TYPE_REQUIREMENTS["Telefonica Basica"].join(", ")}</p>
+          <p><strong>Escrita / Mensageria:</strong> ${IMPORT_TYPE_REQUIREMENTS["Escrita Mensageria"].join(", ")}</p>
+          <p><strong>Opcionais:</strong> ${IMPORT_OPTIONAL_COLUMNS.join(", ")}</p>
+          <p>A duplicidade é validada por contrato, protocolo, ID externo ou pela combinação BPO + atendente/cliente + proposta/consulta.</p>
+        `,
+        actions: `<button class="btn btn-primary" onclick="closeModal()">Entendi</button>`
+      });
+    }
+
+    function clearImportPreview() {
+      showModal({
+        title: `${icon("ph-x-circle")} Descartar prévia`,
+        body: "A prévia atual será descartada. Nenhum caso será importado.",
+        actions: `
+          <button class="btn btn-secondary" onclick="closeModal()">Voltar</button>
+          <button class="btn btn-danger" onclick="state.importPreview=[]; state.importSummary=null; closeModal(); renderActiveTab();">Descartar prévia</button>
+        `
+      });
     }
 
     function handleImportFile(event) {
@@ -3793,17 +4238,31 @@ langchain-ollama
           const wb = xlsx.read(new Uint8Array(e.target.result), { type: "array" });
           const first = wb.Sheets[wb.SheetNames[0]];
           const rows = xlsx.utils.sheet_to_json(first, { defval: "" });
-          state.importPreview = rows.map(r => ({
-            atendente: r.atendente,
-            bpo: r.bpo,
-            tipoAuditoria: r.tipo_auditoria,
-            tipoLigacao: r.tipo_ligacao,
-            tempoLigacao: r.tempo_ligacao,
-            propostaConsulta: r.proposta_consulta,
-            contrato: r.contrato
-          })).filter(r => r.atendente || r.bpo || r.tipoAuditoria);
+          if (!rows.length) {
+            state.importPreview = [];
+            state.importSummary = { valid: 0, invalid: 0, duplicates: 0, missing: [] };
+            renderActiveTab();
+            showToast("A planilha não possui linhas para importar.", "warning");
+            return;
+          }
+          const headers = Object.keys(rows[0] || {}).map(h => normalizeColumn(h));
+          const missing = IMPORT_BASE_COLUMNS.filter(col => !headers.includes(col));
+          if (missing.length) {
+            state.importPreview = [];
+            state.importSummary = { valid: 0, invalid: rows.length, duplicates: 0, missing };
+            renderActiveTab();
+            showToast(`Planilha incompleta. Campos faltando: ${missing.join(", ")}.`, "error");
+            return;
+          }
+          state.importPreview = validateImportRows(rows);
+          state.importSummary = {
+            valid: state.importPreview.filter(r => r.valid && !r.duplicate).length,
+            invalid: state.importPreview.filter(r => !r.valid).length,
+            duplicates: state.importPreview.filter(r => r.duplicate).length,
+            missing: []
+          };
           renderActiveTab();
-          showToast("Arquivo lido com sucesso.", "success");
+          showToast("Planilha validada. Revise a prévia antes de confirmar.", "success");
         } catch (err) {
           showToast("Não foi possível ler o arquivo Excel.", "error");
         }
@@ -3811,22 +4270,101 @@ langchain-ollama
       reader.readAsArrayBuffer(file);
     }
 
+    function normalizeColumn(name) {
+      return String(name || "").trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, "_");
+    }
+
+    function getRowValue(row, column) {
+      const found = Object.keys(row).find(key => normalizeColumn(key) === column);
+      return found ? String(row[found] ?? "").trim() : "";
+    }
+
+    function normalizeAuditType(value) {
+      const normalized = normalizeColumn(value);
+      const map = {
+        "telefonica_basica": "Telefonica Basica",
+        "telefonica_tecnica": "Telefonica Tecnica",
+        "escrita_mensageria": "Escrita Mensageria",
+        "escrita": "Escrita Mensageria",
+        "mensageria": "Escrita Mensageria",
+        "escrita_/_mensageria": "Escrita Mensageria"
+      };
+      return map[normalized] || "";
+    }
+
+    function normalizeCallType(value) {
+      const normalized = normalizeColumn(value);
+      if (["ativa", "ativo"].includes(normalized)) return "Ativa";
+      if (["receptiva", "receptivo"].includes(normalized)) return "Receptiva";
+      return String(value || "").trim();
+    }
+
+    function duplicateKeyFor(row) {
+      if (row.contrato) return `contrato:${row.contrato.toLowerCase()}`;
+      if (row.protocolo) return `protocolo:${row.protocolo.toLowerCase()}`;
+      if (row.idExterno) return `externo:${row.idExterno.toLowerCase()}`;
+      return `combo:${[row.bpo, row.atendente || row.cliente, row.propostaConsulta].join("|").toLowerCase()}`;
+    }
+
+    function validateImportRows(rows) {
+      const existingKeys = new Set(state.cases.map(duplicateKeyFor));
+      const seen = new Set();
+      return rows.map((raw, index) => {
+        const rawType = getRowValue(raw, "tipo_auditoria");
+        const tipoAuditoria = normalizeAuditType(rawType);
+        const auditorLogin = getRowValue(raw, "auditor_login");
+        const auditor = auditorLogin ? state.users.find(u => u.login === auditorLogin && u.ativo && u.perfil === "auditor") : null;
+        const row = {
+          rowNumber: index + 2,
+          atendente: getRowValue(raw, "atendente"),
+          cliente: getRowValue(raw, "cliente"),
+          bpo: getRowValue(raw, "bpo"),
+          tipoAuditoria: tipoAuditoria || rawType,
+          tipoLigacao: normalizeCallType(getRowValue(raw, "tipo_ligacao")),
+          tempoLigacao: getRowValue(raw, "tempo_ligacao"),
+          propostaConsulta: getRowValue(raw, "proposta_consulta"),
+          contrato: getRowValue(raw, "contrato"),
+          protocolo: getRowValue(raw, "protocolo"),
+          idExterno: getRowValue(raw, "id_externo"),
+          auditorLogin,
+          auditorId: auditor?.id || null,
+          errors: []
+        };
+        const required = tipoAuditoria ? [...IMPORT_BASE_COLUMNS, ...(IMPORT_TYPE_REQUIREMENTS[tipoAuditoria] || [])] : IMPORT_BASE_COLUMNS;
+        required.forEach(col => {
+          const value = getRowValue(raw, col);
+          if (!value) row.errors.push(`Campo obrigatório ausente: ${col}`);
+        });
+        if (!tipoAuditoria) row.errors.push("Tipo de auditoria inválido. Use Telefonica Basica, Telefonica Tecnica ou Escrita Mensageria.");
+        if (tipoAuditoria !== "Escrita Mensageria" && row.tipoLigacao && !["Ativa", "Receptiva"].includes(row.tipoLigacao)) {
+          row.errors.push("Tipo de ligação inválido. Use Ativa ou Receptiva.");
+        }
+        if (auditorLogin && !auditor) row.errors.push("Auditor informado não existe, está inativo ou não tem perfil auditor.");
+        const key = duplicateKeyFor(row);
+        row.duplicate = existingKeys.has(key) || seen.has(key);
+        if (row.duplicate) row.errors.push("Possível duplicidade detectada.");
+        seen.add(key);
+        row.valid = row.errors.length === 0;
+        return row;
+      });
+    }
+
     function importPreviewTable() {
       return `
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Atendente</th><th>BPO</th><th>Tipo</th><th>Ligação</th><th>Tempo</th><th>Contrato</th><th>Status</th></tr></thead>
+            <thead><tr><th>Linha</th><th>Atendente/Cliente</th><th>BPO</th><th>Tipo</th><th>Ligação</th><th>Contrato</th><th>Status</th><th>Detalhe</th></tr></thead>
             <tbody>
               ${state.importPreview.map(r => {
-                const ok = !!criteriaCatalog[r.tipoAuditoria];
                 return `<tr>
-                  <td>${escapeHTML(r.atendente)}</td>
+                  <td>${r.rowNumber}</td>
+                  <td>${escapeHTML(r.atendente || r.cliente)}</td>
                   <td>${escapeHTML(r.bpo)}</td>
                   <td>${escapeHTML(r.tipoAuditoria)}</td>
                   <td>${escapeHTML(r.tipoLigacao)}</td>
-                  <td>${escapeHTML(r.tempoLigacao)}</td>
                   <td>${escapeHTML(r.contrato)}</td>
-                  <td><span class="badge ${ok ? "success" : "danger"}">${ok ? "Válido" : "Tipo inválido"}</span></td>
+                  <td><span class="badge ${r.valid && !r.duplicate ? "success" : r.duplicate ? "warning" : "danger"}">${r.valid && !r.duplicate ? "Válida" : r.duplicate ? "Duplicada" : "Com erro"}</span></td>
+                  <td>${escapeHTML((r.errors || []).join(" | ") || "Pronta para importação")}</td>
                 </tr>`;
               }).join("")}
             </tbody>
@@ -3836,32 +4374,28 @@ langchain-ollama
     }
 
     function confirmImport() {
-      const valid = state.importPreview.filter(r => criteriaCatalog[r.tipoAuditoria]);
+      const valid = state.importPreview.filter(r => r.valid && !r.duplicate);
       if (!valid.length) return showToast("Nenhum caso válido para importar.", "warning");
-      valid.forEach(r => {
-        const id = nextId(state.cases);
-        state.cases.push({
-          id,
-          auditorId: null,
-          atendente: r.atendente,
-          bpo: r.bpo,
-          tipoAuditoria: r.tipoAuditoria,
-          tipoLigacao: r.tipoLigacao,
-          tempoLigacao: r.tempoLigacao,
-          propostaConsulta: r.propostaConsulta,
-          contrato: r.contrato,
-          idCaso: `AUD-${String(2026000 + id).slice(-6)}`,
-          status: STATUS.PENDENTE,
-          criadoEm: todayISO(),
-          importadoEm: todayISO(),
-          assignedAt: todayISO(),
-          completedAt: null
-        });
+      showModal({
+        title: `${icon("ph-upload-simple")} Confirmar importação`,
+        body: `${valid.length} linha(s) válida(s) serão importadas. Linhas com erro ou duplicidade serão ignoradas.`,
+        actions: `
+          <button class="btn btn-secondary" onclick="closeModal()">Voltar</button>
+          <button class="btn btn-primary" onclick="executeImport()">${icon("ph-check-circle")} Confirmar importação</button>
+        `
       });
-      redistributePendingCases();
+    }
+
+    function executeImport() {
+      const valid = state.importPreview.filter(r => r.valid && !r.duplicate);
+      DataService.importCases(valid);
       const count = valid.length;
       state.importPreview = [];
-      renderActiveTab();
+      state.importSummary = null;
+      refreshStateFromService();
+      closeModal();
+      state.currentTab = hasManagerAccess() ? "importCases" : "queue";
+      renderApp();
       showToast(`${count} caso(s) importado(s) e distribuído(s).`, "success");
     }
 
@@ -3964,6 +4498,7 @@ langchain-ollama
             "Cliente": c.cliente || "",
             "Tipo": labels[c.tipoAuditoria] || c.tipoAuditoria,
             "Tipo ligação": c.tipoLigacao || "",
+            "Tempo ligação": c.tempoLigacao || "",
             "Proposta/Consulta": c.propostaConsulta || "",
             "Contrato": c.contrato || "",
             "Status caso": c.status || "",
@@ -4142,7 +4677,16 @@ langchain-ollama
       }, 190);
     }
 
-    initMockData();
+    /* =========================================================
+       INICIALIZAÇÃO
+       ========================================================= */
+    function initializeApp() {
+      refreshStateFromService();
+      renderLoginMode();
+      document.querySelector(".version-pill").innerHTML = `<i class="ph ph-shield-check"></i> ${APP_VERSION} · Interface local`;
+    }
+
+    initializeApp();
   </script>
 </body>
 </html>
